@@ -1,0 +1,2 @@
+<put ssid here>
+<put password here>
