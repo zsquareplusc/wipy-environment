@@ -4,7 +4,7 @@
 
 Overview
 ========
-Some code for the wipy_ board, facilitating setup network and running code from
+Some code for the WiPy_ board, facilitating setup network and running code from
 the SD card.
 
 
@@ -16,30 +16,66 @@ Assuming the ExpansionBoard_ is present.
 - try to connect to home network (in STA mode), fall back to AP mode if that fails.
 - mount the SD card to ``/sd``
 - add ``/sd/lib`` to ``sys.path`` and execute ``/sd/main.py`` on SD card
+- a tool to sync files from the PC with the WiPy_ (via FTP)
+
+.. notice::
+
+    The default fallback to AP mode is a security risk as the netowork name and passwort
+    may be known (unless they were changed in the source code here)
 
 
 Installation
 ============
-Copy the contents of ``device/flash`` to the wipy internal flash memory. The
+Copy the contents of ``device/flash`` to the WiPy_ internal flash memory. The
 contents of ``device/sd`` goes onto the SD card.
 
 Edit ``flash/wificonfig.txt`` to contain your own AP and password (changes to
 the security/WPA mode have to be made in ``main.py``)
 
-The ``wipy-ftp.py`` can be used to upload the files.
+The ``wipy-ftp.py`` can be used to upload the files. For first time usage::
+
+    python3 wipy-ftp.py install
+    INFO:FTP:put /flash/boot.py
+    INFO:FTP:put /flash/main.py
+    INFO:FTP:put /flash/lib/expansionboard.py
+    INFO:FTP:put /flash/lib/autoconfig.py
+    Connect to an access point? [Y/n]: y
+    Enter SSID: <your SSID>
+    Enter passphrase: <your password>
+
+.. warning::
+
+    ``wipy-ftp.py install`` Overwrites files without asking. Backup The files
+    before running this tool when the WiPy_ was used before.
+
+
+WiPy-FTP Tool
+=============
+``wipy-ftp.py`` is a tool to upload/download files via FTP.
+
+For configuration, a file called ``wipy-ftp.ini`` must be present with the
+following contents::
+
+    [FTP]
+    server = 192.168.1.1
+    user = micro
+    pass = python
+
+These settings need to be changed, once the WiPy_ is connected to an access point.
+
 
 References
 ==========
 
-- wipy_ (homepage)
-- `wipy manual`_
+- WiPy_ (homepage)
+- `WiPy manual`_
 
-.. _wipy: http://www.wipy.io
+.. _WiPy: http://www.wipy.io
 .. _ExpansionBoard: https://github.com/wipy/wipy/tree/master/hardware/ExpansionBoard-v1.2
-.. _`wipy manual`: https://micropython.org/resources/docs/en/latest/wipy/
+.. _`WiPy manual`: https://micropython.org/resources/docs/en/latest/wipy/
 
 
-WiPy Pins::
+WiPy_ Pins::
 
     .               _______________
                    | HB        RST |

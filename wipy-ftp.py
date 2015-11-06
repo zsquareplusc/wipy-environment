@@ -14,8 +14,11 @@ Adapt as needed when connected via router.
 """
 import configparser  # https://docs.python.org/3/library/configparser.html
 import ftplib        # https://docs.python.org/3/library/ftplib.html
-import sys
+import glob
+import io
 import logging
+import os
+import sys
 
 
 class WiPyFTP(object):
@@ -37,6 +40,7 @@ class WiPyFTP(object):
         self.ftp.quit()
 
     def ls(self, path=None):
+        """List files, meant for interactive use"""
         if path is None:
             path = '/'
         try:
@@ -67,6 +71,7 @@ class WiPyFTP(object):
             self.log.error('FTP error: {}'.format(e))
 
     def cat(self, filename, write_function):
+        """Pipe (text) file contents to stdout, meant for interactive use"""
         try:
             self.log.debug('cat {}'.format(filename))
             self.ftp.retrlines("RETR " + filename, write_function)
@@ -76,11 +81,31 @@ class WiPyFTP(object):
             self.log.error('FTP error: {}'.format(e))
 
 
+WLANCONFIG_TEMPLATE = """\
+ssid = '{ssid}'
+password = '{password}'
+"""
+
+class WiPyActions(WiPyFTP):
+
+    def install_lib(self):
+        for filename in glob.glob('device/flash/lib/*.py'):
+            with open(filename, 'rb') as src:
+                self.put('/flash/lib/{}'.format(os.path.basename(filename)), src)
+
+    def install_top(self):
+        for filename in glob.glob('device/flash/*.py'):
+            with open(filename, 'rb') as src:
+                self.put('/flash/{}'.format(os.path.basename(filename)), src)
+
+    def config_wlan(self):
+        ssid = input('Enter SSID: ')
+        password = input('Enter passphrase: ')
+        self.put('/flash/wlanconfig.py',
+                 io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
+
 def main():
     import argparse
-    import glob
-    import os
-
 
     parser = argparse.ArgumentParser(description='WiPy copy tool')
 
@@ -92,17 +117,22 @@ def main():
     #~ print(args)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
-    with WiPyFTP() as wipy:
+    with WiPyActions() as wipy:
         if args.action == 'ls':
             wipy.ls(args.path)
         elif args.action == 'sync-lib':
-            for filename in glob.glob('device/flash/lib/*.py'):
-                with open(filename, 'rb') as src:
-                    wipy.put('/flash/lib/{}'.format(os.path.basename(filename)), src)
+            wipy.install_lib()
         elif args.action == 'sync-top':
-            for filename in glob.glob('device/flash/*.py'):
-                with open(filename, 'rb') as src:
-                    wipy.put('/flash/{}'.format(os.path.basename(filename)), src)
+            wipy.install_top()
+        elif args.action == 'initialize':
+            wipy.install_top()
+            wipy.install_lib()
+            if input('Connect to an access point? [Y/n]: ').upper() in ('', 'Y'):
+                wipy.config_wlan()
+
+        elif args.action == 'config-wlan':
+            print('Configure the WiPy to connect to an access point')
+            wipy.config_wlan()
 
         elif args.action == 'cat':
             wipy.cat(args.path, print)
