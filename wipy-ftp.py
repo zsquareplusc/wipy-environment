@@ -16,6 +16,7 @@ ACTIONS are:
 - "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
 - "ls" with optional path argument: list files
 - "cat" with filename: show text file contents
+- "upgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the
@@ -166,8 +167,10 @@ def main():
             wipy.config_wlan()
         elif args.action == 'cat':
             wipy.cat(args.path, print)
-        #~ elif args.action == 'put':
-            #~ wipy.put(args.path, ...)
+        elif args.action == 'fwupgrade':
+            print('upload /flash/sys/mcuimg.bin')
+            wipy.put('/flash/sys/mcuimg.bin', open('mcuimg.bin', 'rb'))
+            print('press reset button on WiPy to complete upgrade')
         else:
             sys.stdout.write(__doc__)
         # option to set ssid/pw in wificonfig.txt
