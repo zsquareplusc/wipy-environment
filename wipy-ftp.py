@@ -3,17 +3,10 @@
 """\
 WiPy helper tool to access file via FTP.
 
-For configuration, a file called ``wipy-ftp.ini`` must be present with the
-following contents:
+Usage: wipy-ftp.py [-v --defaults] ACTION [ARGS]
 
-    [FTP]
-    server = 192.168.1.1
-    user = micro
-    pass = python
-
-Adapt as needed when connected via router.
-
-Usage: wipy-ftp.py ACTION [ARGS]
+  -v, --verbose     print more diagnostic messages
+  --defaults        ignore .ini file and use defaults
 
 ACTIONS are:
 - "write-ini" create ``wipy-ftp.ini`` with default settings
@@ -24,6 +17,10 @@ ACTIONS are:
 - "ls" with optional path argument: list files
 - "cat" with filename: show text file contents
 - "help"  this text
+
+For configuration, a file called ``wipy-ftp.ini`` must be present with the
+following contents, run "wipy-ftp.py write-ini" to create one.
+Adapt as needed when connected via router.
 """
 import configparser  # https://docs.python.org/3/library/configparser.html
 import ftplib        # https://docs.python.org/3/library/ftplib.html
@@ -37,16 +34,21 @@ INI_TEMPLATE = """\
 [FTP]
 server = 192.168.1.1
 user = micro
+pass = python
 """
 
 
 class WiPyFTP(object):
-    def __init__(self):
+    def __init__(self, read_ini=True):
         self.ftp = None
         self.log = logging.getLogger('FTP')
         self.config = configparser.RawConfigParser()
-        self.config.readfp(io.StringIO(INI_TEMPLATE))
-        self.config.read('wipy-ftp.ini')
+        self.config.read_string(INI_TEMPLATE)
+        if read_ini:
+            self.config.read('wipy-ftp.ini')
+        self.log.debug('WiPy IP: {}'.format(self.config['FTP']['server']))
+        self.log.debug('FTP user: {}'.format(self.config['FTP']['user']))
+        self.log.debug('FTP pass: {}'.format(self.config['FTP']['pass']))
 
     def __enter__(self):
         self.log.debug('Connecting...')
@@ -132,6 +134,7 @@ def main():
     parser.add_argument('action', type=lambda s: s.lower(), help='Action to execute, try "help"')
     parser.add_argument('path', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
+    parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
 
     args = parser.parse_args()
     #~ print(args)
@@ -146,7 +149,7 @@ def main():
     if not os.path.exists('wipy-ftp.ini'):
         logging.warning('"wipy-ftp.ini" not found, using defaults')
 
-    with WiPyActions() as wipy:
+    with WiPyActions(not args.defaults) as wipy:
         if args.action == 'ls':
             wipy.ls(args.path)
         elif args.action == 'sync-lib':

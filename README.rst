@@ -18,7 +18,7 @@ Assuming the ExpansionBoard_ is present.
 - add ``/sd/lib`` to ``sys.path`` and execute ``/sd/main.py`` on SD card
 - a tool to sync files from the PC with the WiPy_ (via FTP)
 
-.. notice::
+.. note::
 
     The default fallback to AP mode is a security risk as the netowork name and passwort
     may be known (unless they were changed in the source code here)
@@ -45,25 +45,29 @@ AP)::
     before running this tool when the WiPy_ was used before.
 
 Once the WiPy_ connects to a router, its IP address must be updated in
-``wipy-ftp.py``.
+``wipy-ftp.ini``.
 
 
 WiPy-FTP Tool
 =============
 ``wipy-ftp.py`` is a tool to upload/download files via FTP.
 
-Usage: wipy-ftp.py ACTION [ARGS]
+    Usage: wipy-ftp.py [-v --defaults] ACTION [ARGS]
 
-ACTIONS are:
-- "write-ini" create ``wipy-ftp.ini`` with default settings
-- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
-- "sync-lib" copies only /lib
-- "sync-top" copies only boot.py, main.py
-- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
-- "ls" with optional path argument: list files
-- "cat" with filename: show text file contents
-- "help"  this text
-"
+      -v, --verbose     print more diagnostic messages
+      --defaults        ignore .ini file and use defaults
+
+    ACTIONS are:
+
+    - ``write-ini`` create ``wipy-ftp.ini`` with default settings
+    - ``install``  copy boot.py, main.py and /lib from the PC to the WiPy
+    - ``sync-lib`` copies only /lib
+    - ``sync-top`` copies only boot.py, main.py
+    - ``config-wlan`` ask for SSID/Password and write wlanconfig.py on WiPy
+    - ``ls`` with optional path argument: list files
+    - ``cat`` with filename: show text file contents
+    - ``help``  this text
+
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the
 following contents::
