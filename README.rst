@@ -24,15 +24,11 @@ Assuming the ExpansionBoard_ is present.
     may be known (unless they were changed in the source code here)
 
 
-Installation
-============
-Copy the contents of ``device/flash`` to the WiPy_ internal flash memory. The
-contents of ``device/sd`` goes onto the SD card.
-
-Edit ``flash/wificonfig.txt`` to contain your own AP and password (changes to
-the security/WPA mode have to be made in ``main.py``)
-
-The ``wipy-ftp.py`` can be used to upload the files. For first time usage::
+Installation on WiPy
+====================
+The ``wipy-ftp.py`` can be used to upload the files. For first time usage
+(assuming the WiPy_ is in AP mode with default settings, PC connected to this
+AP)::
 
     python3 wipy-ftp.py install
     INFO:FTP:put /flash/boot.py
@@ -48,10 +44,26 @@ The ``wipy-ftp.py`` can be used to upload the files. For first time usage::
     ``wipy-ftp.py install`` Overwrites files without asking. Backup The files
     before running this tool when the WiPy_ was used before.
 
+Once the WiPy_ connects to a router, its IP address must be updated in
+``wipy-ftp.py``.
+
 
 WiPy-FTP Tool
 =============
 ``wipy-ftp.py`` is a tool to upload/download files via FTP.
+
+Usage: wipy-ftp.py ACTION [ARGS]
+
+ACTIONS are:
+- "write-ini" create ``wipy-ftp.ini`` with default settings
+- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
+- "sync-lib" copies only /lib
+- "sync-top" copies only boot.py, main.py
+- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
+- "ls" with optional path argument: list files
+- "cat" with filename: show text file contents
+- "help"  this text
+"
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the
 following contents::
@@ -61,7 +73,18 @@ following contents::
     user = micro
     pass = python
 
+The default file can be created by running ``wipy-ftp.py write-ini``.
 These settings need to be changed, once the WiPy_ is connected to an access point.
+
+
+Technical Details
+=================
+The contents of ``device/flash`` goes to the WiPy_ internal flash memory. The
+contents of ``device/sd`` goes onto the SD card.
+
+The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
+the WiPy. This file is written by the ``config-wlan`` action. The security/WPA
+mode have to be changed in ``/lib/autoconfig.py``, the default is WPA2.
 
 
 References

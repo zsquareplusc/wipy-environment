@@ -3,7 +3,8 @@
 """\
 WiPy helper tool to access file via FTP.
 
-For configuration, a file called ``wipy-ftp.ini`` must be present with the following contents:
+For configuration, a file called ``wipy-ftp.ini`` must be present with the
+following contents:
 
     [FTP]
     server = 192.168.1.1
@@ -11,6 +12,18 @@ For configuration, a file called ``wipy-ftp.ini`` must be present with the follo
     pass = python
 
 Adapt as needed when connected via router.
+
+Usage: wipy-ftp.py ACTION [ARGS]
+
+ACTIONS are:
+- "write-ini" create ``wipy-ftp.ini`` with default settings
+- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
+- "sync-lib" copies only /lib
+- "sync-top" copies only boot.py, main.py
+- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
+- "ls" with optional path argument: list files
+- "cat" with filename: show text file contents
+- "help"  this text
 """
 import configparser  # https://docs.python.org/3/library/configparser.html
 import ftplib        # https://docs.python.org/3/library/ftplib.html
@@ -20,12 +33,19 @@ import logging
 import os
 import sys
 
+INI_TEMPLATE = """\
+[FTP]
+server = 192.168.1.1
+user = micro
+"""
+
 
 class WiPyFTP(object):
     def __init__(self):
         self.ftp = None
         self.log = logging.getLogger('FTP')
         self.config = configparser.RawConfigParser()
+        self.config.readfp(io.StringIO(INI_TEMPLATE))
         self.config.read('wipy-ftp.ini')
 
     def __enter__(self):
@@ -109,13 +129,22 @@ def main():
 
     parser = argparse.ArgumentParser(description='WiPy copy tool')
 
-    parser.add_argument('action', help='Action to execute, try "help"')
+    parser.add_argument('action', type=lambda s: s.lower(), help='Action to execute, try "help"')
     parser.add_argument('path', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
 
     args = parser.parse_args()
     #~ print(args)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+
+    if args.action == 'write-ini':
+        with open('wipy-ftp.ini', 'w') as f:
+            f.write(INI_TEMPLATE)
+        logging.info('"wipy-ftp.ini" written')
+        sys.exit(0)
+
+    if not os.path.exists('wipy-ftp.ini'):
+        logging.warning('"wipy-ftp.ini" not found, using defaults')
 
     with WiPyActions() as wipy:
         if args.action == 'ls':
@@ -129,15 +158,15 @@ def main():
             wipy.install_lib()
             if input('Connect to an access point? [Y/n]: ').upper() in ('', 'Y'):
                 wipy.config_wlan()
-
         elif args.action == 'config-wlan':
             print('Configure the WiPy to connect to an access point')
             wipy.config_wlan()
-
         elif args.action == 'cat':
             wipy.cat(args.path, print)
         #~ elif args.action == 'put':
             #~ wipy.put(args.path, ...)
+        else:
+            sys.stdout.write(__doc__)
         # option to set ssid/pw in wificonfig.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
