@@ -2,7 +2,20 @@
 """\
 Class working with paths
 """
+# Methods that are not implemented, compared to standard pathlib:
+# is_symlink(), is_socket(), is_fifo(), is_block_device(), is_char_device(),
+# as_posix(), as_uri(), is_reserved(), lchmod(), lstat(), symlink_to(),
+# owner()
+# Attributes that are not implemented, compared to standard pathlib:
+# drive, root, anchor
+
+# a few more may not yet be implemented
+
 import os
+
+S_IFDIR = 0x4000
+S_IFREG = 0x8000
+
 
 class Path(object):
     def __init__(self, *pathsegments):
@@ -16,12 +29,12 @@ class Path(object):
             self._parts = []
 
     #~ drive = ''   # we have no drives
-    root = '/'  # name of root directory
-    anchor = '/' # drive + root
+    #~ root = '/'  # name of root directory
+    #~ anchor = '/' # drive + root
 
-    @property
-    def parents(self):
-        return tuple(self._parts[:-1])
+    #~ @property
+    #~ def parents(self):
+        #~ return tuple(reversed(self._parts[:-1]))
 
     @property
     def name(self):
@@ -39,17 +52,8 @@ class Path(object):
     #~ def stem(self):
         #~ return self.name.split('.')[0]
 
-    #~ def as_posix(self)
-        #~ return '/'.join(pathsegments)
-
-    #~ def as_uri(self):
-        #~ return 'file://{}'.format(self.as_posix())
-
     def is_absolute(self):
         return self._is_abs
-
-    #~ def is_reserved(self):
-        #~ return False
 
     #~ def joinpath(self, *other):
         #~ return Path(self.parts + other)
@@ -66,10 +70,25 @@ class Path(object):
                 '/' if self._is_abs else '',
                 '/'.join(self._parts))
 
-    #~ def __eq__(self, other):
-    #~ def __lt__(self, other):
+    def __repr__(self):
+        return "Path('{}')".format(self)
+
+    def __eq__(self, other):
+        if isinstance(other, Path):
+            return str(self) == str(other)
+        else:
+            return False
+
+    def __lt__(self, other):
+        if isinstance(other, Path):
+            return str(self) < str(other)
+        else:
+            return False
+
     #~ def __contains__(self, other):
-    #~ def __div__(self, other):
+
+    def __truediv__(self, other):
+        return Path(str(self), other)
 
     @classmethod
     def cwd(cls):
@@ -86,23 +105,36 @@ class Path(object):
             return False
 
     #~ def glob(self, pattern):
-    #~ def is_dir(self):
-    #~ def is_file(self):
-    #~ def is_symlink(self):
-    #~ def is_socket(self):
-    #~ def is_fifo(self):
-    #~ def is_block_device(self):
-    #~ def is_char_device(self):
-    #~ def iterdir(self):
-    #~ def lchmod(self, mode):
-    #~ def lstat(self):
+
+    def is_dir(self):
+        return (self.stat()[0] & S_IFDIR) != 0
+
+    def is_file(self):
+        return (self.stat()[0] & S_IFREG) != 0
+
+    def iterdir(self):
+        for name in os.listdir(str(self)):
+            yield Path(str(self), name)
+
     #~ def mkdir(self, mode=0o777, parents=False):
+    def mkdir(self):
+        os.mkdir(str(self))
+
     #~ def open(self, mode='r', buffering=-1, encoding=None, errors=None, newline=None):
-    #~ def owner(self):
-    #~ def rename(self, target):
+    def open(self, mode='r'):
+        return open(str(self), mode)
+
+    def rename(self, target):
+        os.rename(str(self), target)
+
     #~ def replace(self, target):
     #~ def resolve(self):
     #~ def rglob(self, pattern):
-    #~ def rmdir(self):
-    #~ def symlink_to(self, target, target_is_directory=False):
-    #~ def unlink(self):
+
+    def rmdir(self):
+        os.rmdir(str(self))
+
+    #~ def touch(self):
+
+    def unlink(self):
+        os.unlink(str(self))
