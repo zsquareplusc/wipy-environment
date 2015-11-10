@@ -130,18 +130,16 @@ class WiPyActions(WiPyFTP):
     def install_lib(self):
         base_path = 'device/flash/lib'
         for root, dirs, files in os.walk(base_path):
+            if '__pycache__' in dirs:
+                dirs.remove('__pycache__')
             path = os.path.relpath(root, base_path).split(os.sep)
             for dir_name in path[0:-1]:
-                print('chdir', dir_name)
                 self.chdir(dir_name)
             if path != ['.'] and path[-1]:
-                print('mkdir', path[-1])
                 self.mkdir(path[-1])
-                print('chdir', path[-1])
                 self.chdir(path[-1])
             for filename in files:
                 with open(os.path.join(root, filename), 'rb') as src:
-                    print('put', filename)
                     self.put('/flash/{}'.format(filename), src)
             if path != ['.'] and path[-1]:
                 for x in path:
