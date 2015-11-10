@@ -75,6 +75,22 @@ class WiPyFTP(object):
         except ftplib.all_errors as e:
             self.log.error('FTP error: {}'.format(e))
 
+    def mkdir(self, dirname):
+        try:
+            self.log.info('mkdir {}'.format(dirname))
+        except ftplib.error_perm as e:
+            self.log.error('invalid path: {} ({})'.format(dirname, e))
+        except ftplib.all_errors as e:
+            self.log.error('FTP error: {}'.format(e))
+
+    def chdir(self, dirname):
+        try:
+            self.log.info('chdir {}'.format(dirname))
+        except ftplib.error_perm as e:
+            self.log.error('invalid path: {} ({})'.format(dirname, e))
+        except ftplib.all_errors as e:
+            self.log.error('FTP error: {}'.format(e))
+
     def put(self, filename, fileobj):
         try:
             self.log.info('put {}'.format(filename))
@@ -112,9 +128,25 @@ password = '{password}'
 class WiPyActions(WiPyFTP):
 
     def install_lib(self):
-        for filename in glob.glob('device/flash/lib/*.py'):
-            with open(filename, 'rb') as src:
-                self.put('/flash/lib/{}'.format(os.path.basename(filename)), src)
+        base_path = 'device/flash/lib'
+        for root, dirs, files in os.walk(base_path):
+            path = os.path.relpath(root, base_path).split(os.sep)
+            for dir_name in path[0:-1]:
+                print('chdir', dir_name)
+                self.chdir(dir_name)
+            if path != ['.'] and path[-1]:
+                print('mkdir', path[-1])
+                self.mkdir(path[-1])
+                print('chdir', path[-1])
+                self.chdir(path[-1])
+            for filename in files:
+                with open(os.path.join(root, filename), 'rb') as src:
+                    print('put', filename)
+                    self.put('/flash/{}'.format(filename), src)
+            if path != ['.'] and path[-1]:
+                for x in path:
+                    print('chdir ..')
+                    self.chdir('..')
 
     def install_top(self):
         for filename in glob.glob('device/flash/*.py'):
@@ -136,6 +168,7 @@ def main():
     parser.add_argument('path', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
+    # parser.add_argument('--noexp', action='store_true', help='skip steps involving the expansion board and SD storage')
 
     args = parser.parse_args()
     #~ print(args)
@@ -178,4 +211,3 @@ def main():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
     main()
-
