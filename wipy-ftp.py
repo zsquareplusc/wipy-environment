@@ -75,23 +75,19 @@ class WiPyFTP(object):
         except ftplib.all_errors as e:
             self.log.error('FTP error: {}'.format(e))
 
-    def mkdir(self, dirname):
-        try:
-            self.log.info('mkdir {}'.format(dirname))
-        except ftplib.error_perm as e:
-            self.log.error('invalid path: {} ({})'.format(dirname, e))
-        except ftplib.all_errors as e:
-            self.log.error('FTP error: {}'.format(e))
-
-    def chdir(self, dirname):
-        try:
-            self.log.info('chdir {}'.format(dirname))
-        except ftplib.error_perm as e:
-            self.log.error('invalid path: {} ({})'.format(dirname, e))
-        except ftplib.all_errors as e:
-            self.log.error('FTP error: {}'.format(e))
+    def makedirs(self, dirname):
+        """Recursively create directories, if not yet existing"""
+        self.log.info('makedirs {}'.format(dirname))
+        self.ftp.cwd('/')
+        for directory in dirname.split('/'):
+            try:
+                self.ftp.cwd(directory)
+            except ftplib.error_perm:
+                self.ftp.mkd(directory)
+                self.ftp.cwd(directory)
 
     def put(self, filename, fileobj):
+        """send binary file"""
         try:
             self.log.info('put {}'.format(filename))
             self.ftp.storbinary("STOR " + filename, fileobj, 1024)
@@ -101,6 +97,7 @@ class WiPyFTP(object):
             self.log.error('FTP error: {}'.format(e))
 
     def get(self, filename, fileobj):
+        """receive binary file"""
         try:
             self.log.info('get {}'.format(filename))
             self.ftp.retrbinary("RETR " + filename, fileobj.write, 1024)
@@ -128,25 +125,19 @@ password = '{password}'
 class WiPyActions(WiPyFTP):
 
     def install_lib(self):
+        """recursively copy /flash/lib"""
         base_path = 'device/flash/lib'
         for root, dirs, files in os.walk(base_path):
             if '__pycache__' in dirs:
                 dirs.remove('__pycache__')
-            path = os.path.relpath(root, base_path).split(os.sep)
-            for dir_name in path[0:-1]:
-                self.chdir(dir_name)
-            if path != ['.'] and path[-1]:
-                self.mkdir(path[-1])
-                self.chdir(path[-1])
+            self.makedirs(os.path.relpath(root, 'device'))
             for filename in files:
+                remote_name = os.path.relpath(os.path.join(root, filename), 'device')
                 with open(os.path.join(root, filename), 'rb') as src:
-                    self.put('/flash/{}'.format(filename), src)
-            if path != ['.'] and path[-1]:
-                for x in path:
-                    print('chdir ..')
-                    self.chdir('..')
+                    self.put('/{}'.format(remote_name), src)
 
     def install_top(self):
+        """copy *.py in /flash"""
         for filename in glob.glob('device/flash/*.py'):
             with open(filename, 'rb') as src:
                 self.put('/flash/{}'.format(os.path.basename(filename)), src)
@@ -202,6 +193,17 @@ def main():
             print('upload /flash/sys/mcuimg.bin')
             wipy.put('/flash/sys/mcuimg.bin', open('mcuimg.bin', 'rb'))
             print('press reset button on WiPy to complete upgrade')
+        elif args.action == 'interact':
+            import code
+            try:
+                import rlcompleter
+                import readline
+            except ImportError as e:
+                logging.warning('readline support failed: {}'.format(e))
+            else:
+                readline.set_completer(rlcompleter.Completer(locals()).complete)
+                readline.parse_and_bind("tab: complete")
+            code.interact(local=locals())
         else:
             sys.stdout.write(__doc__)
         # option to set ssid/pw in wificonfig.txt
