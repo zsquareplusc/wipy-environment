@@ -29,6 +29,7 @@ import glob
 import io
 import logging
 import os
+import shutil
 import sys
 
 INI_TEMPLATE = """\
@@ -37,6 +38,51 @@ server = 192.168.1.1
 user = micro
 pass = python
 """
+
+
+class WiPySimulator(object):
+    def __init__(self, root_directory):
+        self.root = os.path.abspath(root_directory)
+        self.log = logging.getLogger('FTP')
+        self.log.debug('WiPy FTP Simulator in {}'.format(self.root))
+        if not os.path.exists(os.path.join(self.root, 'flash')):
+            os.mkdir(os.path.join(self.root, 'flash'))
+            os.mkdir(os.path.join(self.root, 'flash', 'lib'))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def ls(self, path=None):
+        """List files, meant for interactive use"""
+        if path is None:
+            path = '/'
+        print(os.listdir(os.path.join(self.root, path)))
+
+    def makedirs(self, dirname):
+        """Recursively create directories, if not yet existing"""
+        self.log.info('makedirs {}'.format(dirname))
+        os.makedirs(os.path.join(self.root, os.path.relpath(dirname, '/')), exist_ok=True)
+
+    def put(self, filename, fileobj):
+        """send binary file"""
+        self.log.info('put {}'.format(filename))
+        with open(os.path.join(self.root, os.path.relpath(filename, '/')), 'wb') as dst:
+            shutil.copyfileobj(fileobj, dst)
+
+    def get(self, filename, fileobj):
+        """receive binary file"""
+        self.log.info('get {}'.format(filename))
+        with open(os.path.join(self.root, os.path.relpath(filename, '/')), 'rb') as src:
+            shutil.copyfileobj(src, fileobj)
+
+    def cat(self, filename, write_function):
+        """Pipe (text) file contents to stdout, meant for interactive use"""
+        self.log.debug('cat {}'.format(filename))
+        for line in open(os.path.join(self.root, os.path.relpath(filename, '/'))):
+            write_function(line.rstrip())
 
 
 class WiPyFTP(object):
@@ -118,11 +164,22 @@ class WiPyFTP(object):
 
 
 WLANCONFIG_TEMPLATE = """\
-ssid = '{ssid}'
-password = '{password}'
+ssid = {ssid!r}
+password = {password!r}
 """
 
 class WiPyActions(WiPyFTP):
+
+    def __init__(self, target):
+        self.target = target
+
+    def __enter__(self):
+        self.target.__enter__()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.target.__exit__()
+        pass
 
     def install_lib(self):
         """recursively copy /flash/lib"""
@@ -130,23 +187,23 @@ class WiPyActions(WiPyFTP):
         for root, dirs, files in os.walk(base_path):
             if '__pycache__' in dirs:
                 dirs.remove('__pycache__')
-            self.makedirs(os.path.relpath(root, 'device'))
+            self.target.makedirs('/{}'.format(os.path.relpath(root, 'device')))
             for filename in files:
                 remote_name = os.path.relpath(os.path.join(root, filename), 'device')
                 with open(os.path.join(root, filename), 'rb') as src:
-                    self.put('/{}'.format(remote_name), src)
+                    self.target.put('/{}'.format(remote_name), src)
 
     def install_top(self):
         """copy *.py in /flash"""
         for filename in glob.glob('device/flash/*.py'):
             with open(filename, 'rb') as src:
-                self.put('/flash/{}'.format(os.path.basename(filename)), src)
+                self.target.put('/flash/{}'.format(os.path.basename(filename)), src)
 
     def config_wlan(self):
         ssid = input('Enter SSID: ')
         password = input('Enter passphrase: ')
-        self.put('/flash/wlanconfig.py',
-                 io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
+        self.target.put('/flash/wlanconfig.py',
+                        io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
 
 def main():
     import argparse
@@ -157,6 +214,7 @@ def main():
     parser.add_argument('path', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
+    parser.add_argument('--simulate', metavar='DESTDIR', help='do not access WiPy, put files in gived directory instead')
     # parser.add_argument('--noexp', action='store_true', help='skip steps involving the expansion board and SD storage')
 
     args = parser.parse_args()
@@ -172,14 +230,18 @@ def main():
     if not os.path.exists('wipy-ftp.ini'):
         logging.warning('"wipy-ftp.ini" not found, using defaults')
 
-    with WiPyActions(not args.defaults) as wipy:
+    if args.simulate:
+        target = WiPySimulator(args.simulate)
+    else:
+        target = WiPyActions(not args.defaults)
+    with WiPyActions(target) as wipy:
         if args.action == 'ls':
             wipy.ls(args.path)
         elif args.action == 'sync-lib':
             wipy.install_lib()
         elif args.action == 'sync-top':
             wipy.install_top()
-        elif args.action == 'initialize':
+        elif args.action == 'install':
             wipy.install_top()
             wipy.install_lib()
             if input('Connect to an access point? [Y/n]: ').upper() in ('', 'Y'):
