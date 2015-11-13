@@ -233,7 +233,7 @@ def main():
     if args.simulate:
         target = WiPySimulator(args.simulate)
     else:
-        target = WiPyActions(not args.defaults)
+        target = WiPyFTP(not args.defaults)
     with WiPyActions(target) as wipy:
         if args.action == 'ls':
             wipy.ls(args.path)
