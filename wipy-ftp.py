@@ -17,7 +17,7 @@ ACTIONS are:
 - "ls" with optional path argument: list files
 - "cp" with source and destination: uploads binary file
 - "cat" with filename: show text file contents
-- "upgrade"  write mcuimg.bin file to WiPy for firmware upgrade
+- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the

@@ -24,4 +24,4 @@ with zipfile.ZipFile('Binaries.zip', 'r') as archive:
     with open('mcuimg.bin', 'wb') as f:
         f.write(archive.open('mcuimg.bin').read())
 
-print('perform firmware upgrade with "wipy-ftp.py upgrade"...')
+print('perform firmware upgrade with "wipy-ftp.py fwupgrade"...')
