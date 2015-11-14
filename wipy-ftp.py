@@ -15,7 +15,7 @@ ACTIONS are:
 - "sync-top" copies only boot.py, main.py
 - "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
 - "ls" with optional path argument: list files
-- "put" with optional filename: uploads binary file
+- "cp" with source and destination: uploads binary file
 - "cat" with filename: show text file contents
 - "upgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
