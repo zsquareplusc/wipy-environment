@@ -15,8 +15,9 @@ ACTIONS are:
 - "sync-top" copies only boot.py, main.py
 - "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
 - "ls" with optional path argument: list files
+- "cp" with source and destination: uploads binary file
 - "cat" with filename: show text file contents
-- "upgrade"  write mcuimg.bin file to WiPy for firmware upgrade
+- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the
@@ -124,13 +125,25 @@ class WiPyFTP(object):
     def makedirs(self, dirname):
         """Recursively create directories, if not yet existing"""
         self.log.info('makedirs {}'.format(dirname))
-        self.ftp.cwd('/')
-        for directory in dirname.split('/'):
+        try:
+            self.ftp.cwd('/')
+        except ftplib.error_perm as e:
+            self.log.error('invalid path: {} ({})'.format(dirname, e))
+
+        for directory in dirname.split('/')[1:]:
             try:
+                self.log.info('cwd to {}'.format(directory))
                 self.ftp.cwd(directory)
-            except ftplib.error_perm:
-                self.ftp.mkd(directory)
-                self.ftp.cwd(directory)
+            except ftplib.error_perm as e:
+                self.log.info('creating directory: {} ({})'.format(dirname, e))
+                try:
+                    self.ftp.mkd(directory)
+                    self.ftp.cwd(directory)
+                except ftplib.error_perm as e:
+                    self.log.error('error while creating directory: {} ({})'.format(dirname, e))
+
+            except ftplib.all_errors as e:
+                self.log.error('FTP error: {}'.format(e))
 
     def put(self, filename, fileobj):
         """send binary file"""
@@ -168,7 +181,7 @@ ssid = {ssid!r}
 password = {password!r}
 """
 
-class WiPyActions(WiPyFTP):
+class WiPyActions():
 
     def __init__(self, target):
         self.target = target
@@ -180,6 +193,17 @@ class WiPyActions(WiPyFTP):
     def __exit__(self, *args, **kwargs):
         self.target.__exit__()
         pass
+
+    def cp(self, fileobj, destination):
+        """ copies a binary file """
+        self.target.put(destination, fileobj)
+
+    def ls(self, path=None):
+        """ lists directory entry """
+        self.target.ls(path)
+
+    def put(self, filename, fileobj):
+        self.target.put(filename,fileobj)
 
     def install_lib(self):
         """recursively copy /flash/lib"""
@@ -211,7 +235,8 @@ def main():
     parser = argparse.ArgumentParser(description='WiPy copy tool')
 
     parser.add_argument('action', type=lambda s: s.lower(), help='Action to execute, try "help"')
-    parser.add_argument('path', nargs='?', help='target used for some actions')
+    parser.add_argument('path', nargs='?', help='pathname used for some actions')
+    parser.add_argument('destination', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
     parser.add_argument('--simulate', metavar='DESTDIR', help='do not access WiPy, put files in gived directory instead')
@@ -231,10 +256,14 @@ def main():
         logging.warning('"wipy-ftp.ini" not found, using defaults')
 
     if args.simulate:
+        logging.info('using simulator')
         target = WiPySimulator(args.simulate)
     else:
+        logging.info('using ftp')
         target = WiPyFTP(not args.defaults)
     with WiPyActions(target) as wipy:
+        if args.action == 'cp':
+            wipy.cp(open(args.path,'rb'), args.destination)
         if args.action == 'ls':
             wipy.ls(args.path)
         elif args.action == 'sync-lib':
