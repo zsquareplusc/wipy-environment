@@ -66,7 +66,8 @@ WiPy-FTP Tool
     - ``config-wlan`` ask for SSID/Password and write wlanconfig.py on WiPy
     - ``ls`` with optional path argument: list files
     - ``cat`` with filename: show text file contents
-    - ``upgrade``  write mcuimg.bin file to WiPy for firmware upgrade
+    - ``backup`` download everything in ``/flash``
+    - ``fwupgrade``  write mcuimg.bin file to WiPy for firmware upgrade
     - ``help``  this text
 
 
@@ -90,6 +91,27 @@ contents of ``device/sd`` goes onto the SD card.
 The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
 the WiPy. This file is written by the ``config-wlan`` action. The security/WPA
 mode have to be changed in ``/lib/autoconfig.py``, the default is WPA2.
+
+Actions
+-------
+``install``
+    Designed for first time / one time usage.
+
+``backup``
+    Downloads the contents of ``/flash`` into a newly created directory. The
+    diretory will be named ``backup_<date>``
+
+``ls`` and ``cat``
+    These commands write text to stdout.
+
+``fwupgrade``
+    First download the image using ``download-mcuimg.py``, which should locate
+    the latest binary on github and then run this action to download the
+    firmware to the WiPy_.
+
+``sync-lib``
+    Recursively copy the ``device/lib`` directory to the WiPy_. Can be used
+    repeatedly to download updates to the library.
 
 
 References
