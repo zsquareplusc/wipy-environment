@@ -17,6 +17,7 @@ ACTIONS are:
 - "ls" with optional path argument: list files
 - "cp" with source and destination: uploads binary file
 - "cat" with filename: show text file contents
+- "backup" download everything in /flash
 - "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
 
@@ -32,6 +33,8 @@ import logging
 import os
 import shutil
 import sys
+import posixpath
+import datetime
 
 INI_TEMPLATE = """\
 [FTP]
@@ -61,6 +64,9 @@ class WiPySimulator(object):
         if path is None:
             path = '/'
         print(os.listdir(os.path.join(self.root, path)))
+
+    def walk(self, root):
+        yield from os.walk(os.path.join(self.root, posixpath.relpath(root, '/')))
 
     def makedirs(self, dirname):
         """Recursively create directories, if not yet existing"""
@@ -121,6 +127,28 @@ class WiPyFTP(object):
             self.log.error('invalid path: {} ({})'.format(path, e))
         except ftplib.all_errors as e:
             self.log.error('FTP error: {}'.format(e))
+
+    def walk(self, root):
+        """recursively list files on target"""
+        self.log.debug('walk {}'.format(root))
+        try:
+            self.ftp.cwd(root)
+            lines = []
+            self.ftp.retrlines('LIST', lines.append)
+            items = [(x.startswith('d'), x[49:]) for x in lines]
+            dirs = [name for is_dir, name in items if is_dir]
+            files = [name for is_dir, name in items if not is_dir]
+            yield root, dirs, files
+            for r in dirs:
+                if root == '/':
+                    yield from self.walk('/{}'.format(r))
+                else:
+                    yield from self.walk('{}/{}'.format(root, r))
+        except ftplib.error_perm as e:
+            self.log.error('invalid path: {} ({})'.format(path, e))
+        except ftplib.all_errors as e:
+            self.log.error('FTP error: {}'.format(e))
+
 
     def makedirs(self, dirname):
         """Recursively create directories, if not yet existing"""
@@ -203,7 +231,10 @@ class WiPyActions():
         self.target.ls(path)
 
     def put(self, filename, fileobj):
-        self.target.put(filename,fileobj)
+        self.target.put(filename, fileobj)
+
+    def get(self, filename, fileobj):
+        self.target.get(filename, fileobj)
 
     def install_lib(self):
         """recursively copy /flash/lib"""
@@ -228,6 +259,20 @@ class WiPyActions():
         password = input('Enter passphrase: ')
         self.target.put('/flash/wlanconfig.py',
                         io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
+
+    def backup(self):
+        """Download all data from /flash"""
+        backup_dir = 'backup_{:%Y-%m-%d_%H_%M_%S}'.format(datetime.datetime.now())
+        logging.info('backing up /flash into {}'.format(backup_dir))
+        for root, dirs, files in self.target.walk('/flash'):
+            local_root = os.path.join(backup_dir, posixpath.relpath(root, '/'))
+            if not os.path.exists(local_root):
+                os.makedirs(local_root)
+            for name in files:
+                with open(os.path.join(local_root, name), 'wb') as dst:
+                    self.target.get(posixpath.join(root, name), dst)
+
+
 
 def main():
     import argparse
@@ -284,6 +329,8 @@ def main():
             print('upload /flash/sys/mcuimg.bin')
             wipy.put('/flash/sys/mcuimg.bin', open('mcuimg.bin', 'rb'))
             print('press reset button on WiPy to complete upgrade')
+        elif args.action == 'backup':
+            wipy.backup()
         elif args.action == 'interact':
             import code
             try:

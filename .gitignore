@@ -1,3 +1,4 @@
 /wipy-ftp.ini
 /mcuimg.bin
 /device/flash/lib/__pycache__
+/backup_*
