@@ -2,27 +2,6 @@
 # encoding: utf-8
 """\
 WiPy helper tool to access file via FTP.
-
-Usage: wipy-ftp.py [-v --defaults] ACTION [ARGS]
-
-  -v, --verbose     print more diagnostic messages
-  --defaults        ignore .ini file and use defaults
-
-ACTIONS are:
-- "write-ini" create ``wipy-ftp.ini`` with default settings
-- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
-- "sync-lib" copies only /lib
-- "sync-top" copies only boot.py, main.py
-- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
-- "ls" with optional path argument: list files
-- "cp" with source and destination: uploads binary file
-- "cat" with filename: show text file contents
-- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
-- "help"  this text
-
-For configuration, a file called ``wipy-ftp.ini`` must be present with the
-following contents, run "wipy-ftp.py write-ini" to create one.
-Adapt as needed when connected via router.
 """
 import configparser  # https://docs.python.org/3/library/configparser.html
 import ftplib        # https://docs.python.org/3/library/ftplib.html
@@ -32,6 +11,8 @@ import logging
 import os
 import shutil
 import sys
+import posixpath
+import datetime
 
 INI_TEMPLATE = """\
 [FTP]
@@ -61,6 +42,9 @@ class WiPySimulator(object):
         if path is None:
             path = '/'
         print(os.listdir(os.path.join(self.root, path)))
+
+    def walk(self, root):
+        yield from os.walk(os.path.join(self.root, posixpath.relpath(root, '/')))
 
     def makedirs(self, dirname):
         """Recursively create directories, if not yet existing"""
@@ -121,6 +105,28 @@ class WiPyFTP(object):
             self.log.error('invalid path: {} ({})'.format(path, e))
         except ftplib.all_errors as e:
             self.log.error('FTP error: {}'.format(e))
+
+    def walk(self, root):
+        """recursively list files on target"""
+        self.log.debug('walk {}'.format(root))
+        try:
+            self.ftp.cwd(root)
+            lines = []
+            self.ftp.retrlines('LIST', lines.append)
+            items = [(x.startswith('d'), x[49:]) for x in lines]
+            dirs = [name for is_dir, name in items if is_dir]
+            files = [name for is_dir, name in items if not is_dir]
+            yield root, dirs, files
+            for r in dirs:
+                if root == '/':
+                    yield from self.walk('/{}'.format(r))
+                else:
+                    yield from self.walk('{}/{}'.format(root, r))
+        except ftplib.error_perm as e:
+            self.log.error('invalid path: {} ({})'.format(path, e))
+        except ftplib.all_errors as e:
+            self.log.error('FTP error: {}'.format(e))
+
 
     def makedirs(self, dirname):
         """Recursively create directories, if not yet existing"""
@@ -203,7 +209,10 @@ class WiPyActions():
         self.target.ls(path)
 
     def put(self, filename, fileobj):
-        self.target.put(filename,fileobj)
+        self.target.put(filename, fileobj)
+
+    def get(self, filename, fileobj):
+        self.target.get(filename, fileobj)
 
     def install_lib(self):
         """recursively copy /flash/lib"""
@@ -229,10 +238,29 @@ class WiPyActions():
         self.target.put('/flash/wlanconfig.py',
                         io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
 
+    def backup(self):
+        """Download all data from /flash"""
+        backup_dir = 'backup_{:%Y-%m-%d_%H_%M_%S}'.format(datetime.datetime.now())
+        logging.info('backing up /flash into {}'.format(backup_dir))
+        for root, dirs, files in self.target.walk('/flash'):
+            local_root = os.path.join(backup_dir, posixpath.relpath(root, '/'))
+            if not os.path.exists(local_root):
+                os.makedirs(local_root)
+            for name in files:
+                with open(os.path.join(local_root, name), 'wb') as dst:
+                    self.target.get(posixpath.join(root, name), dst)
+
+
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='WiPy copy tool')
+    parser = argparse.ArgumentParser(
+            description='WiPy copy tool',
+            epilog="""\
+For configuration, a file called ``wipy-ftp.ini`` should be present. Run
+"%(prog)s write-ini" to create one.  Adapt as needed when connected via
+router.
+""")
 
     parser.add_argument('action', type=lambda s: s.lower(), help='Action to execute, try "help"')
     parser.add_argument('path', nargs='?', help='pathname used for some actions')
@@ -284,6 +312,8 @@ def main():
             print('upload /flash/sys/mcuimg.bin')
             wipy.put('/flash/sys/mcuimg.bin', open('mcuimg.bin', 'rb'))
             print('press reset button on WiPy to complete upgrade')
+        elif args.action == 'backup':
+            wipy.backup()
         elif args.action == 'interact':
             import code
             try:
@@ -296,8 +326,20 @@ def main():
                 readline.parse_and_bind("tab: complete")
             code.interact(local=locals())
         else:
-            sys.stdout.write(__doc__)
-        # option to set ssid/pw in wificonfig.txt
+            sys.stdout.write("""\
+ACTIONS are:
+- "write-ini" create ``wipy-ftp.ini`` with default settings
+- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
+- "sync-lib" copies only /lib
+- "sync-top" copies only boot.py, main.py
+- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
+- "ls" with optional path argument: list files
+- "cp" with source and destination: uploads binary file
+- "cat" with filename: show text file contents
+- "backup" download everything in /flash
+- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
+- "help"  this text
+""")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
