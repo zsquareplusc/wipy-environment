@@ -52,23 +52,39 @@ WiPy-FTP Tool
 =============
 ``wipy-ftp.py`` is a tool to upload/download files via FTP.
 
-    Usage: wipy-ftp.py [-v --defaults] ACTION [ARGS]
+    usage: wipy-ftp.py [-h] [-v] [--defaults] [--simulate DESTDIR]
+                       action [path] [destination]
 
-      -v, --verbose     print more diagnostic messages
-      --defaults        ignore .ini file and use defaults
+    WiPy copy tool
 
-    ACTIONS are:
+    positional arguments:
+      action              Action to execute, try "help"
+      path                pathname used for some actions
+      destination         target used for some actions
 
-    - ``write-ini`` create ``wipy-ftp.ini`` with default settings
-    - ``install``  copy boot.py, main.py and /lib from the PC to the WiPy
-    - ``sync-lib`` copies only /lib
-    - ``sync-top`` copies only boot.py, main.py
-    - ``config-wlan`` ask for SSID/Password and write wlanconfig.py on WiPy
-    - ``ls`` with optional path argument: list files
-    - ``cat`` with filename: show text file contents
-    - ``backup`` download everything in ``/flash``
-    - ``fwupgrade``  write mcuimg.bin file to WiPy for firmware upgrade
-    - ``help``  this text
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       show more diagnostic messages
+      --defaults          do not read ini file, use default settings
+      --simulate DESTDIR  do not access WiPy, put files in gived directory instead
+
+    For configuration, a file called ``wipy-ftp.ini`` should be present. Run
+    "wipy-ftp.py write-ini" to create one. Adapt as needed when connected via
+    router.
+
+
+ACTIONS are:
+
+- ``write-ini`` create ``wipy-ftp.ini`` with default settings
+- ``install``  copy boot.py, main.py and /lib from the PC to the WiPy
+- ``sync-lib`` copies only /lib
+- ``sync-top`` copies only boot.py, main.py
+- ``config-wlan`` ask for SSID/Password and write wlanconfig.py on WiPy
+- ``ls`` with optional path argument: list files
+- ``cat`` with filename: show text file contents
+- ``backup`` download everything in ``/flash``
+- ``fwupgrade``  write mcuimg.bin file to WiPy for firmware upgrade
+- ``help``  this text
 
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the

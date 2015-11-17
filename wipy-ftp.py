@@ -2,28 +2,6 @@
 # encoding: utf-8
 """\
 WiPy helper tool to access file via FTP.
-
-Usage: wipy-ftp.py [-v --defaults] ACTION [ARGS]
-
-  -v, --verbose     print more diagnostic messages
-  --defaults        ignore .ini file and use defaults
-
-ACTIONS are:
-- "write-ini" create ``wipy-ftp.ini`` with default settings
-- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
-- "sync-lib" copies only /lib
-- "sync-top" copies only boot.py, main.py
-- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
-- "ls" with optional path argument: list files
-- "cp" with source and destination: uploads binary file
-- "cat" with filename: show text file contents
-- "backup" download everything in /flash
-- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
-- "help"  this text
-
-For configuration, a file called ``wipy-ftp.ini`` must be present with the
-following contents, run "wipy-ftp.py write-ini" to create one.
-Adapt as needed when connected via router.
 """
 import configparser  # https://docs.python.org/3/library/configparser.html
 import ftplib        # https://docs.python.org/3/library/ftplib.html
@@ -273,11 +251,16 @@ class WiPyActions():
                     self.target.get(posixpath.join(root, name), dst)
 
 
-
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='WiPy copy tool')
+    parser = argparse.ArgumentParser(
+            description='WiPy copy tool',
+            epilog="""\
+For configuration, a file called ``wipy-ftp.ini`` should be present. Run
+"%(prog)s write-ini" to create one.  Adapt as needed when connected via
+router.
+""")
 
     parser.add_argument('action', type=lambda s: s.lower(), help='Action to execute, try "help"')
     parser.add_argument('path', nargs='?', help='pathname used for some actions')
@@ -343,8 +326,20 @@ def main():
                 readline.parse_and_bind("tab: complete")
             code.interact(local=locals())
         else:
-            sys.stdout.write(__doc__)
-        # option to set ssid/pw in wificonfig.txt
+            sys.stdout.write("""\
+ACTIONS are:
+- "write-ini" create ``wipy-ftp.ini`` with default settings
+- "install"  copy boot.py, main.py and /lib from the PC to the WiPy
+- "sync-lib" copies only /lib
+- "sync-top" copies only boot.py, main.py
+- "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
+- "ls" with optional path argument: list files
+- "cp" with source and destination: uploads binary file
+- "cat" with filename: show text file contents
+- "backup" download everything in /flash
+- "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
+- "help"  this text
+""")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
