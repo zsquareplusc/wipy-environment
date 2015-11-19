@@ -7,20 +7,27 @@ Overview
 Some code for the WiPy_ board, facilitating setup network and running code from
 the SD card.
 
+Code for the PC simplifies first time setup and later copying data to the WiPy_
+or backing it up.
 
 Features
 ========
-Assuming the ExpansionBoard_ is present.
+Assuming the ExpansionBoard_ (or a similar setup) is present.
 
 - activate REPL on serial port
 - try to connect to home network (in STA mode), fall back to AP mode if that fails.
-- mount the SD card to ``/sd``
+- try to mount the SD card to ``/sd``
 - add ``/sd/lib`` to ``sys.path`` and execute ``/sd/main.py`` on SD card
-- a tool to sync files from the PC with the WiPy_ (via FTP)
+
+Pc tools:
+
+- a tool to sync files from the PC with the WiPy_ (via FTP). It can also send
+  the firmware file or backup the WiPy_ internal flash.
+- an other tool to download firmware images from the internet
 
 .. note::
 
-    The default fallback to AP mode is a security risk as the netowork name and passwort
+    The default fallback to AP mode is a security risk as the network name and password
     may be known (unless they were changed in the source code here)
 
 
@@ -66,7 +73,7 @@ WiPy-FTP Tool
       -h, --help          show this help message and exit
       -v, --verbose       show more diagnostic messages
       --defaults          do not read ini file, use default settings
-      --simulate DESTDIR  do not access WiPy, put files in gived directory instead
+      --simulate DESTDIR  do not access WiPy, put files in given directory instead
 
     For configuration, a file called ``wipy-ftp.ini`` should be present. Run
     "wipy-ftp.py write-ini" to create one. Adapt as needed when connected via
@@ -76,15 +83,14 @@ WiPy-FTP Tool
 ACTIONS are:
 
 - ``write-ini`` create ``wipy-ftp.ini`` with default settings
-- ``install``  copy boot.py, main.py and /lib from the PC to the WiPy
-- ``sync-lib`` copies only /lib
-- ``sync-top`` copies only boot.py, main.py
-- ``config-wlan`` ask for SSID/Password and write wlanconfig.py on WiPy
+- ``install``  copy ``boot.py``, ``main.py`` and ``/lib`` from the PC to the WiPy_
+- ``sync-lib`` recursively copies ``/lib``
+- ``sync-top`` copies ``boot.py``, ``main.py``
+- ``config-wlan`` ask for SSID/Password and write ``wlanconfig.py`` on WiPy_
 - ``ls`` with optional path argument: list files
 - ``cat`` with filename: show text file contents
 - ``backup`` download everything in ``/flash``
-- ``fwupgrade``  write mcuimg.bin file to WiPy for firmware upgrade
-- ``help``  this text
+- ``fwupgrade``  write ``mcuimg.bin`` file to WiPy for firmware upgrade
 
 
 For configuration, a file called ``wipy-ftp.ini`` must be present with the
@@ -105,13 +111,14 @@ The contents of ``device/flash`` goes to the WiPy_ internal flash memory. The
 contents of ``device/sd`` goes onto the SD card.
 
 The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
-the WiPy. This file is written by the ``config-wlan`` action. The security/WPA
+the WiPy_. This file is written by the ``config-wlan`` action. The security/WPA
 mode have to be changed in ``/lib/autoconfig.py``, the default is WPA2.
 
 Actions
 -------
 ``install``
-    Designed for first time / one time usage.
+    Designed for first time / one time usage. It corresponds to running the
+    action ``sync-top``, ``sync-lib`` and ``config-wlan``.
 
 ``backup``
     Downloads the contents of ``/flash`` into a newly created directory. The
@@ -133,10 +140,11 @@ Actions
 References
 ==========
 
-- WiPy_ (homepage)
+- http://www.wipy.io
+- WiPy_ (github)
 - `WiPy manual`_
 
-.. _WiPy: http://www.wipy.io
+.. _WiPy: https://github.com/wipy/wipy
 .. _ExpansionBoard: https://github.com/wipy/wipy/tree/master/hardware/ExpansionBoard-v1.2
 .. _`WiPy manual`: https://micropython.org/resources/docs/en/latest/wipy/
 
