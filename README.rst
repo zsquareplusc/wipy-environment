@@ -118,11 +118,11 @@ Actions
 -------
 ``install``
     Designed for first time / one time usage. It corresponds to running the
-    action ``sync-top``, ``sync-lib`` and ``config-wlan``.
+    action ``backup``, ``sync-top``, ``sync-lib`` and ``config-wlan``.
 
 ``backup``
     Downloads the contents of ``/flash`` into a newly created directory. The
-    diretory will be named ``backup_<date>``
+    directory will be named ``backup_<date>``
 
 ``ls`` and ``cat``
     These commands write text to stdout.

@@ -299,6 +299,7 @@ router.
         elif args.action == 'sync-top':
             wipy.install_top()
         elif args.action == 'install':
+            wipy.backup()
             wipy.install_top()
             wipy.install_lib()
             if input('Connect to an access point? [Y/n]: ').upper() in ('', 'Y'):
