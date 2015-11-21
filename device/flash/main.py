@@ -1,4 +1,11 @@
+#! /usr/bin/env python3
+# encoding: utf-8
+#
 # main.py -- put your code here!
+#
+# (C) 2015 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
 
 import expansionboard
 import autoconfig

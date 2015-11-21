@@ -1,3 +1,9 @@
+#! /usr/bin/env python3
+# encoding: utf-8
+#
+# (C) 2015 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
 """\
 Functions related to the ExpansionBoard
 https://github.com/wipy/wipy/tree/master/hardware/ExpansionBoard-v1.2

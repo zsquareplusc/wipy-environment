@@ -1,5 +1,9 @@
 #! /usr/bin/env python3
 # encoding: utf-8
+#
+# (C) 2015 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
 """\
 WiPy Download Tool (Download site -> PC)
 
