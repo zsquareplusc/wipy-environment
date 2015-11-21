@@ -19,7 +19,7 @@ Assuming the ExpansionBoard_ (or a similar setup) is present.
 - try to mount the SD card to ``/sd``
 - add ``/sd/lib`` to ``sys.path`` and execute ``/sd/main.py`` on SD card
 
-Pc tools:
+PC tools:
 
 - a tool to sync files from the PC with the WiPy_ (via FTP). It can also send
   the firmware file or backup the WiPy_ internal flash.
@@ -37,7 +37,7 @@ The ``wipy-ftp.py`` can be used to upload the files. For first time usage
 (assuming the WiPy_ is in AP mode with default settings, PC connected to this
 AP)::
 
-    python3 wipy-ftp.py install
+    $ python3 wipy-ftp.py install
     INFO:FTP:put /flash/boot.py
     INFO:FTP:put /flash/main.py
     INFO:FTP:put /flash/lib/expansionboard.py
@@ -50,9 +50,6 @@ AP)::
 
     ``wipy-ftp.py install`` Overwrites files without asking. Backup The files
     before running this tool when the WiPy_ was used before.
-
-Once the WiPy_ connects to a router, its IP address must be updated in
-``wipy-ftp.ini``.
 
 
 WiPy-FTP Tool
@@ -80,42 +77,9 @@ WiPy-FTP Tool
     router.
 
 
-ACTIONS are:
-
-- ``write-ini`` create ``wipy-ftp.ini`` with default settings
-- ``install``  copy ``boot.py``, ``main.py`` and ``/lib`` from the PC to the WiPy_
-- ``sync-lib`` recursively copies ``/lib``
-- ``sync-top`` copies ``boot.py``, ``main.py``
-- ``config-wlan`` ask for SSID/Password and write ``wlanconfig.py`` on WiPy_
-- ``ls`` with optional path argument: list files
-- ``cat`` with filename: show text file contents
-- ``backup`` download everything in ``/flash``
-- ``fwupgrade``  write ``mcuimg.bin`` file to WiPy for firmware upgrade
-
-
-For configuration, a file called ``wipy-ftp.ini`` must be present with the
-following contents::
-
-    [FTP]
-    server = 192.168.1.1
-    user = micro
-    pass = python
-
-The default file can be created by running ``wipy-ftp.py write-ini``.
-These settings need to be changed, once the WiPy_ is connected to an access point.
-
-
-Technical Details
-=================
-The contents of ``device/flash`` goes to the WiPy_ internal flash memory. The
-contents of ``device/sd`` goes onto the SD card.
-
-The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
-the WiPy_. This file is written by the ``config-wlan`` action. The security/WPA
-mode have to be changed in ``/lib/autoconfig.py``, the default is WPA2.
-
 Actions
 -------
+
 ``install``
     Designed for first time / one time usage. It corresponds to running the
     action ``backup``, ``sync-top``, ``sync-lib`` and ``config-wlan``.
@@ -125,16 +89,58 @@ Actions
     directory will be named ``backup_<date>``
 
 ``ls`` and ``cat``
-    These commands write text to stdout.
+    These commands write text to stdout. A path (on the device) can be given as
+    argument.
 
 ``fwupgrade``
-    First download the image using ``download-mcuimg.py``, which should locate
-    the latest binary on github and then run this action to download the
+    Write ``mcuimg.bin`` file to WiPy for firmware upgrade. First download the
+    image using ``download-mcuimg.py`` and then run this action to download the
     firmware to the WiPy_.
 
 ``sync-lib``
     Recursively copy the ``device/lib`` directory to the WiPy_. Can be used
     repeatedly to download updates to the library.
+
+``sync-top``
+    Copies ``boot.py``, ``main.py`` to the device.
+
+``write-ini``
+    Create ``wipy-ftp.ini`` with default settings.
+
+``config-wlan``
+    Ask for SSID/Password and write ``wlanconfig.py`` on WiPy_.
+
+
+Configuration
+-------------
+For configuration, a file called ``wipy-ftp.ini`` should be present with the
+following contents::
+
+    [FTP]
+    server = 192.168.1.1
+    user = micro
+    pass = python
+
+The default file can be created by running ``wipy-ftp.py write-ini``.  These
+settings need to be changed, once the WiPy_ is connected to an access point.
+
+
+Download Tool
+=============
+The ``download-mcuimg.py`` tool downloads the firmware archive and extracts
+``mcuimg.bin``. It will search for the latest release on github, unless
+``--latest`` is given, then it downloads the latest (inofficial) build from
+micropython.org/downloads.
+
+
+Technical Details
+=================
+The contents of ``device/flash`` goes to the WiPy_ internal flash memory. The
+contents of ``device/sd`` goes onto the SD card.
+
+The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
+the WiPy_. This file is written by the ``config-wlan`` action. The security/WPA
+mode has to be changed in ``/lib/autoconfig.py``, the default is WPA2.
 
 
 References
