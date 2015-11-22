@@ -142,7 +142,7 @@ class WiPyFTP(object):
 
         for directory in dirname.split('/')[1:]:
             try:
-                self.log.info('cwd to {}'.format(directory))
+                self.log.debug('cwd to {}'.format(directory))
                 self.ftp.cwd(directory)
             except ftplib.error_perm as e:
                 self.log.info('creating directory: {} ({})'.format(dirname, e))

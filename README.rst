@@ -33,23 +33,26 @@ PC tools:
 
 Installation on WiPy
 ====================
-The ``wipy-ftp.py`` can be used to upload the files. For first time usage
+The ``wipy-ftp.py`` tool can be used to upload the files. For first time usage
 (assuming the WiPy_ is in AP mode with default settings, PC connected to this
 AP)::
 
     $ python3 wipy-ftp.py install
+    INFO:root:using ftp
+    INFO:root:backing up /flash into backup_2015-11-22_12_12_12
+    INFO:FTP:get /flash/main.py
+    INFO:FTP:get /flash/boot.py
     INFO:FTP:put /flash/boot.py
     INFO:FTP:put /flash/main.py
+    INFO:FTP:makedirs /flash/lib
     INFO:FTP:put /flash/lib/expansionboard.py
+    INFO:FTP:put /flash/lib/upathlib.py
     INFO:FTP:put /flash/lib/autoconfig.py
     Connect to an access point? [Y/n]: y
     Enter SSID: <your SSID>
     Enter passphrase: <your password>
 
-.. warning::
-
-    ``wipy-ftp.py install`` Overwrites files without asking. Backup The files
-    before running this tool when the WiPy_ was used before.
+The original contents of ``/flash`` is backed up in a subdirectory.
 
 
 WiPy-FTP Tool
@@ -131,6 +134,16 @@ The ``download-mcuimg.py`` tool downloads the firmware archive and extracts
 ``mcuimg.bin``. It will search for the latest release on github, unless
 ``--latest`` is given, then it downloads the latest (inofficial) build from
 micropython.org/downloads.
+
+    usage: download-mcuimg.py [-h] [-v] [--latest]
+
+    WiPy FW download tool
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  show more diagnostic messages
+      --latest       download latest (inofficial) builds from
+                     micropython.org/downloads
 
 
 Technical Details
