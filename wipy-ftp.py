@@ -280,9 +280,9 @@ router.
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
     if args.action == 'write-ini':
-        with open('wipy-ftp.ini', 'w') as f:
+        with open(args.ini, 'w') as f:
             f.write(INI_TEMPLATE)
-        logging.info('"wipy-ftp.ini" written')
+        logging.info('"{}" written'.format(args.ini))
         sys.exit(0)
 
     if not os.path.exists(args.ini):
@@ -294,6 +294,7 @@ router.
     else:
         logging.info('using ftp')
         target = WiPyFTP(None if args.defaults else args.ini)
+
     with WiPyActions(target) as wipy:
         if args.action == 'cp':
             wipy.cp(open(args.path,'rb'), args.destination)
