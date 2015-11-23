@@ -73,6 +73,7 @@ WiPy-FTP Tool
       -h, --help          show this help message and exit
       -v, --verbose       show more diagnostic messages
       --defaults          do not read ini file, use default settings
+      --ini INI           alternate name for settings file (default: wipy-ftp.ini)
       --simulate DESTDIR  do not access WiPy, put files in given directory instead
 
     For configuration, a file called ``wipy-ftp.ini`` should be present. Run

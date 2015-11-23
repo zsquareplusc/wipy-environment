@@ -75,13 +75,13 @@ class WiPySimulator(object):
 
 
 class WiPyFTP(object):
-    def __init__(self, read_ini=True):
+    def __init__(self, read_ini='wipy-ftp.ini'):
         self.ftp = None
         self.log = logging.getLogger('FTP')
         self.config = configparser.RawConfigParser()
         self.config.read_string(INI_TEMPLATE)
-        if read_ini:
-            self.config.read('wipy-ftp.ini')
+        if read_ini is not None:
+            self.config.read(read_ini)
         self.log.debug('WiPy IP: {}'.format(self.config['FTP']['server']))
         self.log.debug('FTP user: {}'.format(self.config['FTP']['user']))
         self.log.debug('FTP pass: {}'.format(self.config['FTP']['pass']))
@@ -271,6 +271,7 @@ router.
     parser.add_argument('destination', nargs='?', help='target used for some actions')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
+    parser.add_argument('--ini', help='alternate name for settings file (default: %(default)s)', default='wipy-ftp.ini')
     parser.add_argument('--simulate', metavar='DESTDIR', help='do not access WiPy, put files in given directory instead')
     # parser.add_argument('--noexp', action='store_true', help='skip steps involving the expansion board and SD storage')
 
@@ -284,15 +285,15 @@ router.
         logging.info('"wipy-ftp.ini" written')
         sys.exit(0)
 
-    if not os.path.exists('wipy-ftp.ini'):
-        logging.warning('"wipy-ftp.ini" not found, using defaults')
+    if not os.path.exists(args.ini):
+        logging.warning('"{}" not found, using defaults'.format(args.ini))
 
     if args.simulate:
         logging.info('using simulator')
         target = WiPySimulator(args.simulate)
     else:
         logging.info('using ftp')
-        target = WiPyFTP(not args.defaults)
+        target = WiPyFTP(None if args.defaults else args.ini)
     with WiPyActions(target) as wipy:
         if args.action == 'cp':
             wipy.cp(open(args.path,'rb'), args.destination)
