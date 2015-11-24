@@ -67,12 +67,6 @@ class WiPySimulator(object):
         with open(os.path.join(self.root, os.path.relpath(filename, '/')), 'rb') as src:
             shutil.copyfileobj(src, fileobj)
 
-    def cat(self, filename, write_function):
-        """Pipe (text) file contents to stdout, meant for interactive use"""
-        self.log.debug('cat {}'.format(filename))
-        for line in open(os.path.join(self.root, os.path.relpath(filename, '/'))):
-            write_function(line.rstrip())
-
 
 class WiPyFTP(object):
     def __init__(self, read_ini='wipy-ftp.ini'):
@@ -173,16 +167,6 @@ class WiPyFTP(object):
         try:
             self.log.info('get {}'.format(filename))
             self.ftp.retrbinary("RETR " + filename, fileobj.write, 1024)
-        except ftplib.error_perm as e:
-            self.log.error('invalid path: {} ({})'.format(filename, e))
-        except ftplib.all_errors as e:
-            self.log.error('FTP error: {}'.format(e))
-
-    def cat(self, filename, write_function):
-        """Pipe (text) file contents to stdout, meant for interactive use"""
-        try:
-            self.log.debug('cat {}'.format(filename))
-            self.ftp.retrlines("RETR " + filename, write_function)
         except ftplib.error_perm as e:
             self.log.error('invalid path: {} ({})'.format(filename, e))
         except ftplib.all_errors as e:
@@ -320,7 +304,7 @@ router.
             wipy.config_wlan()
     elif args.action == 'cat':
         with WiPyActions(target) as wipy:
-            wipy.cat(args.path, print)
+            wipy.get(args.path, sys.stdout.buffer)
     elif args.action == 'fwupgrade':
         with WiPyActions(target) as wipy:
             print('upload /flash/sys/mcuimg.bin')

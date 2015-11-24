@@ -92,9 +92,14 @@ Actions
     Downloads the contents of ``/flash`` into a newly created directory. The
     directory will be named ``backup_<date>``
 
-``ls`` and ``cat``
-    These commands write text to stdout. A path (on the device) can be given as
-    argument.
+``ls [path]``
+    List directory (on stdout).
+
+``cat path``
+    Retrieve ``path`` and write it to stdout (binary).
+
+``cp local_src remote_dst``
+    Copy a single file from PC to device.
 
 ``fwupgrade``
     Write ``mcuimg.bin`` file to WiPy for firmware upgrade. First download the
