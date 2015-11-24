@@ -191,10 +191,6 @@ class WiPyActions():
         self.target.__exit__()
         pass
 
-    def cp(self, fileobj, destination):
-        """ copies a binary file """
-        self.target.put(destination, fileobj)
-
     def ls(self, path=None):
         """ lists directory entry """
         self.target.ls(path)
@@ -281,7 +277,8 @@ router.
 
     if args.action == 'cp':
         with WiPyActions(target) as wipy:
-            wipy.cp(open(args.path,'rb'), args.destination)
+            with open(args.path,'rb') as src:
+                wipy.put(args.destination, src)
     elif args.action == 'ls':
         with WiPyActions(target) as wipy:
             wipy.ls(args.path)
