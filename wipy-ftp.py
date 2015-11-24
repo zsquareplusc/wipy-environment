@@ -279,6 +279,9 @@ router.
         with WiPyActions(target) as wipy:
             with open(args.path,'rb') as src:
                 wipy.put(args.destination, src)
+    elif args.action == 'cat':
+        with WiPyActions(target) as wipy:
+            wipy.get(args.path, sys.stdout.buffer)
     elif args.action == 'ls':
         with WiPyActions(target) as wipy:
             wipy.ls(args.path)
@@ -299,9 +302,6 @@ router.
         with WiPyActions(target) as wipy:
             print('Configure the WiPy to connect to an access point')
             wipy.config_wlan()
-    elif args.action == 'cat':
-        with WiPyActions(target) as wipy:
-            wipy.get(args.path, sys.stdout.buffer)
     elif args.action == 'fwupgrade':
         with WiPyActions(target) as wipy:
             print('upload /flash/sys/mcuimg.bin')
@@ -311,6 +311,7 @@ router.
         with WiPyActions(target) as wipy:
             wipy.backup()
     elif args.action == 'interact':
+        # local REPL loop with established FTP connection for development
         with WiPyActions(target) as wipy:
             import code
             try:
@@ -330,9 +331,9 @@ ACTIONS are:
 - "sync-lib" copies only /lib
 - "sync-top" copies only boot.py, main.py
 - "config-wlan" ask for SSID/Password and write wlanconfig.py on WiPy
-- "ls" with optional path argument: list files
-- "cp" with source and destination: uploads binary file
-- "cat" with filename: show text file contents
+- "ls" with optional remote path argument: list files
+- "cp" with local source and remote destination: uploads binary file
+- "cat" with remote filename: show file contents
 - "backup" download everything in /flash
 - "fwupgrade"  write mcuimg.bin file to WiPy for firmware upgrade
 - "help"  this text
