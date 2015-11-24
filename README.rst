@@ -65,16 +65,16 @@ WiPy-FTP Tool
     WiPy copy tool
 
     positional arguments:
-      action              Action to execute, try "help"
-      path                pathname used for some actions
-      destination         target used for some actions
+      action          Action to execute, try "help"
+      path            pathname used for some actions
+      destination     target used for some actions
 
     optional arguments:
-      -h, --help          show this help message and exit
-      -v, --verbose       show more diagnostic messages
-      --defaults          do not read ini file, use default settings
-      --ini INI           alternate name for settings file (default: wipy-ftp.ini)
-      --simulate DESTDIR  do not access WiPy, put files in given directory instead
+      -h, --help      show this help message and exit
+      -v, --verbose   show more diagnostic messages
+      --defaults      do not read ini file, use default settings
+      --ini INI       alternate name for settings file (default: wipy-ftp.ini)
+      --simulate DIR  do not access WiPy, put files in given directory instead
 
     For configuration, a file called ``wipy-ftp.ini`` should be present. Run
     "wipy-ftp.py write-ini" to create one. Adapt as needed when connected via
@@ -133,6 +133,9 @@ following contents::
 The default file can be created by running ``wipy-ftp.py write-ini``.  These
 settings need to be changed, once the WiPy_ is connected to an access point.
 
+The option ``--ini`` can be used to choose a different filename for the ini
+file, which may be helpful when working with multiple boards.
+
 
 Download Tool
 =============
@@ -160,6 +163,10 @@ contents of ``device/sd`` goes onto the SD card.
 The WLAN configuration for STA mode are stored in ``flash/wlanconfig.py`` on
 the WiPy_. This file is written by the ``config-wlan`` action. The security/WPA
 mode has to be changed in ``/lib/autoconfig.py``, the default is WPA2.
+
+The ``--simulation`` can be used to for testing. The option needs to point to an
+existing local directory. All FTP operations are then simulated using files in
+that location.
 
 
 References

@@ -255,7 +255,7 @@ router.
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--defaults', action='store_true', help='do not read ini file, use default settings')
     parser.add_argument('--ini', help='alternate name for settings file (default: %(default)s)', default='wipy-ftp.ini')
-    parser.add_argument('--simulate', metavar='DESTDIR', help='do not access WiPy, put files in given directory instead')
+    parser.add_argument('--simulate', metavar='DIR', help='do not access WiPy, put files in given directory instead')
     # parser.add_argument('--noexp', action='store_true', help='skip steps involving the expansion board and SD storage')
 
     args = parser.parse_args()
