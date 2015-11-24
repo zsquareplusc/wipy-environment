@@ -81,7 +81,10 @@ class WiPyFTP(object):
         self.config = configparser.RawConfigParser()
         self.config.read_string(INI_TEMPLATE)
         if read_ini is not None:
-            self.config.read(read_ini)
+            if os.path.exists(read_ini):
+                self.config.read(read_ini)
+            else:
+                logging.warning('"{}" not found, using defaults'.format(read_ini))
         self.log.debug('WiPy IP: {}'.format(self.config['FTP']['server']))
         self.log.debug('FTP user: {}'.format(self.config['FTP']['user']))
         self.log.debug('FTP pass: {}'.format(self.config['FTP']['pass']))
@@ -262,7 +265,7 @@ def main():
             description='WiPy copy tool',
             epilog="""\
 For configuration, a file called ``wipy-ftp.ini`` should be present. Run
-"%(prog)s write-ini" to create one.  Adapt as needed when connected via
+"%(prog)s write-ini" to create one. Adapt as needed when connected via
 router.
 """)
 
@@ -285,9 +288,6 @@ router.
         logging.info('"{}" written'.format(args.ini))
         sys.exit(0)
 
-    if not os.path.exists(args.ini):
-        logging.warning('"{}" not found, using defaults'.format(args.ini))
-
     if args.simulate:
         logging.info('using simulator')
         target = WiPySimulator(args.simulate)
@@ -295,33 +295,42 @@ router.
         logging.info('using ftp')
         target = WiPyFTP(None if args.defaults else args.ini)
 
-    with WiPyActions(target) as wipy:
-        if args.action == 'cp':
+    if args.action == 'cp':
+        with WiPyActions(target) as wipy:
             wipy.cp(open(args.path,'rb'), args.destination)
-        if args.action == 'ls':
+    elif args.action == 'ls':
+        with WiPyActions(target) as wipy:
             wipy.ls(args.path)
-        elif args.action == 'sync-lib':
+    elif args.action == 'sync-lib':
+        with WiPyActions(target) as wipy:
             wipy.install_lib()
-        elif args.action == 'sync-top':
+    elif args.action == 'sync-top':
+        with WiPyActions(target) as wipy:
             wipy.install_top()
-        elif args.action == 'install':
+    elif args.action == 'install':
+        with WiPyActions(target) as wipy:
             wipy.backup()
             wipy.install_top()
             wipy.install_lib()
             if input('Connect to an access point? [Y/n]: ').upper() in ('', 'Y'):
                 wipy.config_wlan()
-        elif args.action == 'config-wlan':
+    elif args.action == 'config-wlan':
+        with WiPyActions(target) as wipy:
             print('Configure the WiPy to connect to an access point')
             wipy.config_wlan()
-        elif args.action == 'cat':
+    elif args.action == 'cat':
+        with WiPyActions(target) as wipy:
             wipy.cat(args.path, print)
-        elif args.action == 'fwupgrade':
+    elif args.action == 'fwupgrade':
+        with WiPyActions(target) as wipy:
             print('upload /flash/sys/mcuimg.bin')
             wipy.put('/flash/sys/mcuimg.bin', open('mcuimg.bin', 'rb'))
             print('press reset button on WiPy to complete upgrade')
-        elif args.action == 'backup':
+    elif args.action == 'backup':
+        with WiPyActions(target) as wipy:
             wipy.backup()
-        elif args.action == 'interact':
+    elif args.action == 'interact':
+        with WiPyActions(target) as wipy:
             import code
             try:
                 import rlcompleter
@@ -332,8 +341,8 @@ router.
                 readline.set_completer(rlcompleter.Completer(locals()).complete)
                 readline.parse_and_bind("tab: complete")
             code.interact(local=locals())
-        else:
-            sys.stdout.write("""\
+    else:
+        sys.stdout.write("""\
 ACTIONS are:
 - "write-ini" create ``wipy-ftp.ini`` with default settings
 - "install"  copy boot.py, main.py and /lib from the PC to the WiPy
