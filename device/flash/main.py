@@ -10,19 +10,18 @@
 import expansionboard
 import autoconfig
 import upathlib
+import ulog
 
 autoconfig.wlan()
 
-print('SD: preparing SD card')
+# XXX ulog remote config
+
 if expansionboard.initialize_sd_card():
     main = upathlib.Path('/sd/main.py')
-    print('SD: mounted to /sd')
-    print('SD: execute {}...'.format(main))
+    ulog.root.info('execute {}...'.format(main))
     if main.exists():
         execfile(str(main))
     else:
-        print('SD: no file /sd/main.py found!')
-else:
-    print('SD: no card found!')
+        ulog.root.warn('no file /sd/main.py found!')
 
 

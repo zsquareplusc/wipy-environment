@@ -11,6 +11,7 @@ https://github.com/wipy/wipy/tree/master/hardware/ExpansionBoard-v1.2
 from machine import Pin
 from machine import SD
 from machine import UART
+import ulog
 import os
 import sys
 
@@ -19,6 +20,8 @@ uart = None
 
 # initialize GPIO16 (GN LED on expansion board) in gpio mode (alt=0) and make it an output
 led = Pin('GP16', mode=Pin.OUT)
+led(1) # LED OFF
+
 s1 = Pin('GP17', mode=Pin.IN, pull=Pin.PULL_UP)
 
 # XXX Vbatt analog input: GP3
@@ -27,13 +30,17 @@ s1 = Pin('GP17', mode=Pin.IN, pull=Pin.PULL_UP)
 def initialize_sd_card():
     """Try to mount SD card and append /sd/lib to sys.path"""
     global sd
+    log = ulog.Logger('SD: ')
     try:
+        log.info('preparing SD card')
         sd = SD(pins=('GP10', 'GP11', 'GP15'))
         os.mount(sd, '/sd')
         sys.path.append('/sd/lib')
     except OSError:
+        log.info('no card found!')
         return False
     else:
+        log.info('mounted to /sd')
         return True
 
 
