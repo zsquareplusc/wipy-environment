@@ -14,7 +14,11 @@ import ulog
 
 autoconfig.wlan()
 
-# XXX ulog remote config
+
+ulog_config = upathlib.Path('/flash/ulogconfig.py')
+if ulog_config.exists():
+    execfile(str(ulog_config))
+del ulog_config
 
 if expansionboard.initialize_sd_card():
     main = upathlib.Path('/sd/main.py')
@@ -22,6 +26,7 @@ if expansionboard.initialize_sd_card():
     if main.exists():
         execfile(str(main))
     else:
-        ulog.root.warn('no file /sd/main.py found!')
+        ulog.root.warn('no file {} found!'.format(main))
+    del main
 
 
