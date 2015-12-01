@@ -47,7 +47,7 @@ class DefaultHandler(object):
 class RSyslogHandler(object):
     """https://tools.ietf.org/html/rfc5424"""
     def __init__(self, address):
-        self.fmt = '<{p}> {x}{m}\n'
+        self.fmt = '<{p}> {x}{m}'
         self.address = address
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -84,6 +84,6 @@ class Logger(object):
 
 root = Logger()
 
-def add_remote(self, host, port=514):
+def add_remote(host, port=514):
     """Add remote syslog destination"""
     handlers.append(RSyslogHandler((host, port)))
