@@ -119,6 +119,10 @@ Actions
 ``config-wlan``
     Ask for SSID/Password and write ``wlanconfig.py`` on WiPy_.
 
+``config-ulog``
+    Ask for host/port settings for remote logging using ulog, writes
+    ``ulogconfig.py`` on WiPy_.
+
 
 Configuration
 -------------

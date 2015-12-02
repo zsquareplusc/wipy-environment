@@ -178,6 +178,11 @@ ssid = {ssid!r}
 password = {password!r}
 """
 
+ULOG_CONFIG_TEMPLATE = """\
+import ulog
+ulog.add_remote({ip!r}, {port})
+"""
+
 class WiPyActions():
 
     def __init__(self, target):
@@ -224,6 +229,14 @@ class WiPyActions():
         password = input('Enter passphrase: ')
         self.target.put('/flash/wlanconfig.py',
                         io.BytesIO(WLANCONFIG_TEMPLATE.format(ssid=ssid, password=password).encode('utf-8')))
+
+    def config_ulog(self):
+        ip = input('Enter IP: ')
+        port = input('UDP port [514]: ')
+        if not port:
+            port = '514'
+        self.target.put('/flash/ulogconfig.py',
+                        io.BytesIO(ULOG_CONFIG_TEMPLATE.format(ip=ip, port=int(port)).encode('utf-8')))
 
     def backup(self):
         """Download all data from /flash"""
@@ -302,6 +315,10 @@ router.
         with WiPyActions(target) as wipy:
             print('Configure the WiPy to connect to an access point')
             wipy.config_wlan()
+    elif args.action == 'config-ulog':
+        with WiPyActions(target) as wipy:
+            print('Configure the WiPy to send ulog (syslog compatible) messages to following IP address')
+            wipy.config_ulog()
     elif args.action == 'fwupgrade':
         with WiPyActions(target) as wipy:
             print('upload /flash/sys/mcuimg.bin')
