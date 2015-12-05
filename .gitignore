@@ -3,3 +3,5 @@
 /device/flash/lib/__pycache__
 /backup_*
 /Binaries.zip
+/doc/_build
+/xxx
