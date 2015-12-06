@@ -18,6 +18,10 @@ Assuming the ExpansionBoard_ (or a similar setup) is present.
 - try to connect to home network (in STA mode), fall back to AP mode if that fails.
 - try to mount the SD card to ``/sd``
 - add ``/sd/lib`` to ``sys.path`` and execute ``/sd/main.py`` on SD card
+- libraies for the WiPy_:
+
+  - ``ulog``
+  - ``upathlib``
 
 PC tools:
 

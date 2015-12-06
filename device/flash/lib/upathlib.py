@@ -131,6 +131,7 @@ class Path(object):
 
     def rename(self, target):
         os.rename(str(self), target)
+        # XXX change current path to represent new name?
 
     #~ def replace(self, target):
     #~ def resolve(self):

@@ -11,14 +11,6 @@ This module provides a subset of the Python :mod:`pathlib`.
 
         :param pathsegments: one or more strings representing a path.
 
-    .. method:: exists()
-
-        :returns bool: return if the target of the path exists
-
-    .. method:: stat()
-
-        :return tuple: file stats (access times, size etc)-
-
     .. method:: __str__
 
         :return str: return full path as string.
@@ -31,6 +23,22 @@ This module provides a subset of the Python :mod:`pathlib`.
 
         :returns bool: if path is starting with a slash.
 
+
+    Testing/reading files/directories:
+
+    .. method:: exists()
+
+        :returns bool: return if the target of the path exists
+
+    .. method:: stat()
+
+        :return tuple: file stats (access times, size etc.).
+
+    .. method:: iterdir()
+
+        :returns iterator: get an iterator that yields path objects for all
+                           files and subdirectories of that path.
+
     .. method:: is_dir
 
         :returns bool: return if path is pointing to a directory.
@@ -39,13 +47,8 @@ This module provides a subset of the Python :mod:`pathlib`.
 
         :returns bool: return if path is pointing to a normal file.
 
-    .. method:: iterdir()
 
-        :returns iterator: get an iterator that yiels path objects.
-
-    .. method:: mkdir()
-
-        Create a directory representing the current path.
+    Modifying files/directories:
 
     .. method:: open(mode='r')
 
@@ -54,6 +57,10 @@ This module provides a subset of the Python :mod:`pathlib`.
     .. method:: rename(target)
 
         Change filename of current path.
+
+    .. method:: mkdir()
+
+        Create a directory representing the current path.
 
     .. method:: rmdir()
 
@@ -65,11 +72,15 @@ This module provides a subset of the Python :mod:`pathlib`.
 
     Sorting:
 
-    ``__eq__`` and ``__lt__`` are implmemented so that paths can be compared lexically.
+    ``__eq__`` and ``__lt__`` are implemented so that paths can be compared lexically.
 
     Operator:
 
-    ``__truediv__`` the operator ``/`` is implemented to join path segments.
+    .. method:: __truediv__(other)
+
+        :param other: A path object or string.
+        :returns Path: new Path instance with combined paths
+        The operator ``/`` is implemented to join path segments.
 
     Class Methods:
 
