@@ -216,6 +216,7 @@ class WiPyActions():
             for filename in files:
                 remote_name = os.path.relpath(os.path.join(root, filename), 'device')
                 with open(os.path.join(root, filename), 'rb') as src:
+                    remote_name = remote_name.replace('\\', '/')
                     self.target.put('/{}'.format(remote_name), src)
 
     def install_top(self):

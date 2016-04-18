@@ -21,8 +21,11 @@ Usage: download-mcuimg.py [-v] [--latest]
 --latest          download from micropython.org/download for latest builds
 
 """
-
-import urllib.request
+try:
+    import urllib.request as url
+except:
+    import urllib as url
+    
 from pprint import pprint
 import zipfile
 import json
@@ -30,7 +33,7 @@ import json
 def main():
     import argparse
     import logging
-
+    
     parser = argparse.ArgumentParser(description='WiPy FW download tool')
     parser.add_argument('-v', '--verbose', action='store_true', help='show more diagnostic messages')
     parser.add_argument('--latest', action='store_true', help='download latest (inofficial) builds from micropython.org/downloads')
@@ -40,7 +43,8 @@ def main():
 
     if args.latest:
         logging.debug('downloading bleeding edge builds from http://micropython.org/downloads')
-        html_site = urllib.request.urlopen('http://micropython.org/download').read().decode('utf-8')
+        html_site = url.urlopen('http://micropython.org/download').read().decode('utf-8')
+        
         hit_index_start = html_site.find('http://micropython.org/resources/firmware/wipy-')
         if hit_index_start:
             snippset = html_site[hit_index_start:hit_index_start+150]
@@ -51,13 +55,13 @@ def main():
         zip_url = snippset[:snippset.find("zip")+3]
     else:
         logging.debug('downloading latest official release')
-        release_info = json.loads(urllib.request.urlopen('https://api.github.com/repos/wipy/wipy/releases/latest').read().decode('utf-8'))
+        release_info = json.loads(url.urlopen('https://api.github.com/repos/wipy/wipy/releases/latest').read().decode('utf-8'))
         logging.info("TAG: {}, NAME: {}".format(release_info['name'],release_info['tag_name']))
         zip_url = release_info['assets'][0]['browser_download_url']
 
     logging.debug('Downloading ZIP from: {}'.format(zip_url))
     with open('Binaries.zip', 'wb') as f:
-        f.write(urllib.request.urlopen(zip_url).read())
+        f.write(url.urlopen(zip_url).read())
 
     logging.info('Extracting mcuimg.bin...')
     with zipfile.ZipFile('Binaries.zip', 'r') as archive:
