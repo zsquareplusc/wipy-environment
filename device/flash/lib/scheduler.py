@@ -15,12 +15,21 @@ import time
 class ExitScheduler(Exception):
     pass
 
+
 class Task(object):
     def __init__(self, scheduler, generator):
         self.scheduler = scheduler
         self.generator = generator
         self.iterator = generator()
         self.mask = 0
+
+    def stop(self):
+        self.scheduler.remove(self)
+
+    def restart(self):
+        self.scheduler.remove(self)
+        self.iterator = self.generator()
+        self.scheduler.running.append(self)
 
     def handle_exception(self, exception):
         sys.print_exception(exception)
@@ -29,8 +38,7 @@ class Task(object):
 class RestartingTask(Task):
     def handle_exception(self, exception):
         sys.print_exception(exception)
-        self.iterator = self.generator()
-        self.scheduler.running.append(self)
+        self.restart()
 
 
 class Scheduler(object):
@@ -62,7 +70,7 @@ class Scheduler(object):
 
     def set_flag(self, flag):
         self.flags |= flag
-        # XXX wakeup
+        self.wakeup()
 
     def loop(self):
         while True:
@@ -92,7 +100,13 @@ class Scheduler(object):
                             self.waiting.append(task)
                             task.mask = mask
             else:
-                # XXX sleep
-                time.sleep_ms(10)
-                gc.collect()
+                self.sleep()
+
+    def wakeup(self):
+        pass
+
+    def sleep(self):
+        # XXX use low power features, e.g. machine.idle()
+        time.sleep_ms(10)
+        gc.collect()
 
