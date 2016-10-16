@@ -8,13 +8,29 @@
 A simple scheduler based on generators.
 """
 import gc
+import sys
 import time
 
 
-class Task:
-    def __init__(self, generator):
-        self.mask = 0
+class ExitScheduler(Exception):
+    pass
+
+class Task(object):
+    def __init__(self, scheduler, generator):
+        self.scheduler = scheduler
         self.generator = generator
+        self.iterator = generator()
+        self.mask = 0
+
+    def handle_exception(self, exception):
+        sys.print_exception(exception)
+
+
+class RestartingTask(Task):
+    def handle_exception(self, exception):
+        sys.print_exception(exception)
+        self.iterator = self.generator()
+        self.scheduler.running.append(self)
 
 
 class Scheduler(object):
@@ -33,8 +49,10 @@ class Scheduler(object):
         self.flag_counter += 1
         return flag
 
-    def run(self, generator):
-        self.running.append(Task(generator()))
+    def run(self, generator, cls=Task):
+        task = cls(self, generator)
+        self.running.append(task)
+        return task
 
     def remove(self, task):
         if task in self.running:
@@ -59,10 +77,15 @@ class Scheduler(object):
                 for task in list(self.running):
                     try:
                         #~ print("! next->{}".format(task.generator.__name__))
-                        mask = task.generator.__next__()
+                        mask = task.iterator.__next__()
                     except StopIteration:
                         self.remove(task)
-                    # XXX "except" other errors: remove task too, print exception, restart option?
+                    except ExitScheduler:
+                        raise
+                    except:
+                        # other errors: remove task, handle exception
+                        self.remove(task)
+                        task.handle_exception(sys.exc_info()[1])
                     else:
                         if mask:
                             self.running.remove(task)
