@@ -34,7 +34,7 @@ LOG_CRON      = 0o110   #  clock daemon
 LOG_AUTHPRIV  = 0o120   #  security/authorization messages (private)
 LOG_FTP       = 0o130   #  FTP daemon
 
-prio_text = ('EMERG', 'ALERT', 'CRIT', 'ERR', 'WARN', 'NOTICE', 'INFO', 'DEBUG')
+prio_text = ('EMERG', 'ALERT', 'CRIT', 'ERROR', 'WARN', 'NOTICE', 'INFO', 'DEBUG')
 
 class DefaultHandler(object):
     def __init__(self):
@@ -76,10 +76,10 @@ class Logger(object):
         self.log(LOG_NOTICE, message)
 
     def warn(self, message):
-        self.log(LOG_WARN, message)
+        self.log(LOG_WARNING, message)
 
     def error(self, message):
-        self.log(LOG_ERROR, message)
+        self.log(LOG_ERR, message)
 
 
 root = Logger()
