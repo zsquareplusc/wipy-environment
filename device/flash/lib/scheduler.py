@@ -60,6 +60,7 @@ class Scheduler(object):
     def run(self, generator, cls=Task):
         task = cls(self, generator)
         self.running.append(task)
+        self.wakeup()
         return task
 
     def remove(self, task):
@@ -74,7 +75,6 @@ class Scheduler(object):
 
     def loop(self):
         while True:
-            #~ print("..sched")
             if self.flags:
                 for task in list(self.waiting):
                     if self.flags & task.mask:
