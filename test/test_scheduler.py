@@ -106,6 +106,36 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
         self.assertRaises(scheduler.ExitScheduler, self.scheduler.loop)
         self.assertEqual(countdown[0], 0)
 
+    def test_delay(self):
+
+        def sleep(n):
+            for i in range(int(n*10)):  # irq at 0.1 sec => conv. to seconds
+                yield self.irq_thread.flag
+
+        def sleep_example():
+            print("before")
+            t_start = time.time()
+            yield from sleep(1.3)
+            t_end = time.time()
+            self.sleep_time = t_end - t_start
+            print("after: {}".format(self.sleep_time))
+
+        countdown = [20]  # limit restarts to let test finish...
+        def wait_for_timer():
+            while True:
+                if countdown[0]:
+                    print(countdown[0])
+                    countdown[0] -= 1
+                    yield self.irq_thread.flag
+                else:
+                    raise scheduler.ExitScheduler()
+
+        self.scheduler.run(sleep_example)
+        self.scheduler.run(wait_for_timer)
+        self.assertRaises(scheduler.ExitScheduler, self.scheduler.loop)
+        self.assertEqual(countdown[0], 0)
+        self.assertTrue( 1.299 < self.sleep_time < 1.5)
+
 
 
 
