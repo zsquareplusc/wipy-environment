@@ -67,7 +67,7 @@ class Test_scheduler(unittest.TestCase):
             counter[0] += 1
             raise scheduler.ExitScheduler()
         s.run(one)
-        self.assertRaises(scheduler.ExitScheduler, s.loop)
+        self.assertRaises(scheduler.ExitScheduler, s.run_loop)
         self.assertEqual(counter[0], 1)
 
     def test_restart(self):
@@ -81,7 +81,7 @@ class Test_scheduler(unittest.TestCase):
             else:
                 raise scheduler.ExitScheduler()
         s.run(failure, scheduler.RestartingTask)
-        self.assertRaises(scheduler.ExitScheduler, s.loop)
+        self.assertRaises(scheduler.ExitScheduler, s.run_loop)
         self.assertEqual(countdown[0], 0)
 
 
@@ -126,7 +126,7 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
                 else:
                     raise scheduler.ExitScheduler()
         self.scheduler.run(wait_for_timer)
-        self.assertRaises(scheduler.ExitScheduler, self.scheduler.loop)
+        self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop)
         self.assertEqual(countdown[0], 0)
 
     def test_delay(self):
