@@ -18,6 +18,12 @@ import scheduler
 sys.print_exception = lambda e: traceback.print_tb(e.__traceback__) or print(e)
 
 
+class abort(object):
+    """helper class (can beused as task) to abort the scheduler loop"""
+    def __next__(self):
+        raise scheduler.ExitScheduler()
+
+
 class TestScheduler(scheduler.Scheduler):
     def __init__(self):
         super().__init__()
@@ -32,6 +38,23 @@ class TestScheduler(scheduler.Scheduler):
         print("wakeup")
         self.low_power.set()
 
+    def run_loop(self, timeout=3):
+        timeout = threading.Timer(timeout, lambda: self.run(abort))
+        timeout.start()
+        self.loop()
+        timeout.cancel()
+
+
+class Test_scheduler_test_infrastructure(unittest.TestCase):
+    """Test for the helper code in this module"""
+
+    def test_abort(self):
+        s = TestScheduler()
+        t_start = time.time()
+        self.assertRaises(scheduler.ExitScheduler, s.run_loop)
+        t_end = time.time()
+        run_time = t_end - t_start
+        self.assertTrue(2.9 < run_time < 4)
 
 
 class Test_scheduler(unittest.TestCase):
@@ -120,23 +143,9 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
             self.sleep_time = t_end - t_start
             print("after: {}".format(self.sleep_time))
 
-        countdown = [20]  # limit restarts to let test finish...
-        def wait_for_timer():
-            while True:
-                if countdown[0]:
-                    print(countdown[0])
-                    countdown[0] -= 1
-                    yield self.irq_thread.flag
-                else:
-                    raise scheduler.ExitScheduler()
-
         self.scheduler.run(sleep_example)
-        self.scheduler.run(wait_for_timer)
-        self.assertRaises(scheduler.ExitScheduler, self.scheduler.loop)
-        self.assertEqual(countdown[0], 0)
+        self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop, 2)
         self.assertTrue( 1.299 < self.sleep_time < 1.5)
-
-
 
 
 if __name__ == '__main__':
