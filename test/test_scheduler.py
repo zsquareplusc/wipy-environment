@@ -28,18 +28,32 @@ class TestScheduler(scheduler.Scheduler):
     def __init__(self):
         super().__init__()
         self.low_power = threading.Event()
+        self.history = []
+
+    def trace(self, event):
+        # print(event)
+        self.history.append(event)
 
     def sleep(self):
-        print("sleep")
+        self.trace("sleep")
         self.low_power.clear()
         self.low_power.wait()
 
     def wakeup(self):
-        print("wakeup")
+        self.trace("wakeup")
         self.low_power.set()
 
+    def set_flag(self, flag):
+        self.trace("set_flag")
+        super().set_flag(flag)
+
     def run_loop(self, timeout=3):
-        timeout = threading.Timer(timeout, lambda: self.run(abort))
+
+        def run_abort():
+            self.trace('abort')
+            self.run(abort)
+
+        timeout = threading.Timer(timeout, run_abort)
         timeout.start()
         self.loop()
         timeout.cancel()
@@ -49,6 +63,7 @@ class Test_scheduler_test_infrastructure(unittest.TestCase):
     """Test for the helper code in this module"""
 
     def test_abort(self):
+        """The TestScheduler automatically terminates the loop"""
         s = TestScheduler()
         t_start = time.time()
         self.assertRaises(scheduler.ExitScheduler, s.run_loop)
@@ -59,7 +74,14 @@ class Test_scheduler_test_infrastructure(unittest.TestCase):
 
 class Test_scheduler(unittest.TestCase):
 
+    def test_sleep(self):
+        """If there is no task, it goes to sleep"""
+        s = TestScheduler()
+        self.assertRaises(scheduler.ExitScheduler, s.run_loop, 1)
+        self.assertEqual(s.history, ['sleep', 'abort', 'wakeup'])
+
     def test_basic_run(self):
+        """Tasks can be started with run"""
         s = TestScheduler()
         counter = [0]
         def one():
@@ -71,6 +93,7 @@ class Test_scheduler(unittest.TestCase):
         self.assertEqual(counter[0], 1)
 
     def test_restart(self):
+        """Tasks can be restared after errors"""
         s = TestScheduler()
         countdown = [2]  # limit restarts to let test finish...
         def failure():
@@ -98,7 +121,7 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
         def run(self):
             while self.alive:
                 time.sleep(0.1)
-                print("irq")
+                self.scheduler.trace("irq")
                 self.scheduler.set_flag(self.flag)
 
         def stop(self):
@@ -116,11 +139,12 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
         self.irq_thread.stop()
 
     def test_timer_interrupt(self):
+        """Intterups can wake up the scheduler"""
         countdown = [2]  # limit restarts to let test finish...
         def wait_for_timer():
             while True:
                 if countdown[0]:
-                    print(countdown[0])
+                    #~ print(countdown[0])
                     countdown[0] -= 1
                     yield self.irq_thread.flag
                 else:
@@ -130,18 +154,19 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
         self.assertEqual(countdown[0], 0)
 
     def test_delay(self):
+        """Delays have to be implemented by waiting on flags"""
 
         def sleep(n):
             for i in range(int(n*10)):  # irq at 0.1 sec => conv. to seconds
                 yield self.irq_thread.flag
 
         def sleep_example():
-            print("before")
+            self.scheduler.trace("before")
             t_start = time.time()
             yield from sleep(1.3)
             t_end = time.time()
             self.sleep_time = t_end - t_start
-            print("after: {}".format(self.sleep_time))
+            self.scheduler.trace("after: {}".format(self.sleep_time))
 
         self.scheduler.run(sleep_example)
         self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop, 2)
