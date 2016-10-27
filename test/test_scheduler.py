@@ -18,6 +18,24 @@ import scheduler
 sys.print_exception = lambda e: traceback.print_tb(e.__traceback__) or print(e)
 
 
+class Stopwatch(object):
+    def __init__(self):
+        self.t_start = None
+        self.t_end = None
+        self.laps = []
+
+    def __enter__(self):
+        self.t_start = time.time()
+
+    def __exit__(self, *args):
+        self.t_end = time.time()
+        self.laps.append(self.t_end - self.t_start)
+
+    @property
+    def elapsed_time(self):
+        return sum(self.laps)
+
+
 class abort(object):
     """helper class (can beused as task) to abort the scheduler loop"""
     def __next__(self):
@@ -155,6 +173,7 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
 
     def test_delay(self):
         """Delays have to be implemented by waiting on flags"""
+        stopwatch = Stopwatch()
 
         def sleep(n):
             for i in range(int(n*10)):  # irq at 0.1 sec => conv. to seconds
@@ -162,15 +181,13 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
 
         def sleep_example():
             self.scheduler.trace("before")
-            t_start = time.time()
-            yield from sleep(1.3)
-            t_end = time.time()
-            self.sleep_time = t_end - t_start
-            self.scheduler.trace("after: {}".format(self.sleep_time))
+            with stopwatch:
+                yield from sleep(1.3)
+            self.scheduler.trace("after: {}".format(stopwatch.elapsed_time))
 
         self.scheduler.run(sleep_example)
         self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop, 2)
-        self.assertTrue( 1.299 < self.sleep_time < 1.5)
+        self.assertTrue( 1.299 < stopwatch.elapsed_time < 1.5)
 
 
 if __name__ == '__main__':
