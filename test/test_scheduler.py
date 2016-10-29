@@ -157,19 +157,20 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
         self.irq_thread.stop()
 
     def test_timer_interrupt(self):
-        """Intterups can wake up the scheduler"""
-        countdown = [2]  # limit restarts to let test finish...
+        """Interrupts can wake up the scheduler"""
+        countdown = 2  # limit restarts to let test finish...
         def wait_for_timer():
+            nonlocal countdown
             while True:
-                if countdown[0]:
+                if countdown:
                     #~ print(countdown[0])
-                    countdown[0] -= 1
+                    countdown -= 1
                     yield self.irq_thread.flag
                 else:
                     raise scheduler.ExitScheduler()
         self.scheduler.run(wait_for_timer)
         self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop)
-        self.assertEqual(countdown[0], 0)
+        self.assertEqual(countdown, 0)
 
     def test_delay(self):
         """Delays have to be implemented by waiting on flags"""
@@ -187,7 +188,7 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
 
         self.scheduler.run(sleep_example)
         self.assertRaises(scheduler.ExitScheduler, self.scheduler.run_loop, 2)
-        self.assertTrue( 1.299 < stopwatch.elapsed_time < 1.5)
+        self.assertTrue(1.299 < stopwatch.elapsed_time < 1.5)
 
 
 if __name__ == '__main__':
