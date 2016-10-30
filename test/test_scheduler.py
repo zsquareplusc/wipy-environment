@@ -37,7 +37,7 @@ class Stopwatch(object):
 
 
 class abort(object):
-    """helper class (can beused as task) to abort the scheduler loop"""
+    """helper class (can be used as task) to abort the scheduler loop"""
     def __next__(self):
         raise scheduler.ExitScheduler()
 
@@ -76,6 +76,14 @@ class TestScheduler(scheduler.Scheduler):
         self.loop()
         timeout.cancel()
 
+    def get_trace(self):
+        try:
+            n = self.history.index('abort')
+        except IndexError:
+            return self.history
+        else:
+            return self.history[:n]
+
 
 class Test_scheduler_test_infrastructure(unittest.TestCase):
     """Test for the helper code in this module"""
@@ -96,34 +104,36 @@ class Test_scheduler(unittest.TestCase):
         """If there is no task, it goes to sleep"""
         s = TestScheduler()
         self.assertRaises(scheduler.ExitScheduler, s.run_loop, 1)
-        self.assertEqual(s.history, ['sleep', 'abort', 'wakeup'])
+        self.assertEqual(s.get_trace(), ['sleep'])
 
     def test_basic_run(self):
         """Tasks can be started with run"""
         s = TestScheduler()
-        counter = [0]
+        counter = 0
         def one():
+            nonlocal counter
             yield
-            counter[0] += 1
+            counter += 1
             raise scheduler.ExitScheduler()
         s.run(one)
         self.assertRaises(scheduler.ExitScheduler, s.run_loop)
-        self.assertEqual(counter[0], 1)
+        self.assertEqual(counter, 1)
 
     def test_restart(self):
         """Tasks can be restared after errors"""
         s = TestScheduler()
-        countdown = [2]  # limit restarts to let test finish...
+        countdown = 2  # limit restarts to let test finish...
         def failure():
-            if countdown[0]:
-                countdown[0] -= 1
+            nonlocal countdown
+            if countdown:
+                countdown -= 1
                 yield
                 raise Exception("pow!")
             else:
                 raise scheduler.ExitScheduler()
         s.run(failure, scheduler.RestartingTask)
         self.assertRaises(scheduler.ExitScheduler, s.run_loop)
-        self.assertEqual(countdown[0], 0)
+        self.assertEqual(countdown, 0)
 
 
 class Test_scheduler_with_interrupts(unittest.TestCase):
@@ -163,7 +173,6 @@ class Test_scheduler_with_interrupts(unittest.TestCase):
             nonlocal countdown
             while True:
                 if countdown:
-                    #~ print(countdown[0])
                     countdown -= 1
                     yield self.irq_thread.flag
                 else:
