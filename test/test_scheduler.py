@@ -121,6 +121,12 @@ class Test_scheduler(unittest.TestCase):
 
     def test_restart(self):
         """Tasks can be restared after errors"""
+
+        class TaskWithTrace(scheduler.RestartingTask):
+            def handle_exception(self, exception):
+                self.scheduler.trace(('exception', str(exception)))
+                self.restart()
+
         s = TestScheduler()
         countdown = 2  # limit restarts to let test finish...
         def failure():
@@ -131,7 +137,7 @@ class Test_scheduler(unittest.TestCase):
                 raise Exception("pow!")
             else:
                 raise scheduler.ExitScheduler()
-        s.run(failure, scheduler.RestartingTask)
+        s.run(failure, TaskWithTrace)
         self.assertRaises(scheduler.ExitScheduler, s.run_loop)
         self.assertEqual(countdown, 0)
 
