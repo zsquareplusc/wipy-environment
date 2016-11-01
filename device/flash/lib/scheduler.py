@@ -31,13 +31,20 @@ class Task(object):
         self.iterator = self.generator()
         self.scheduler.running.append(self)
 
+    # this function is called by the scheduler
+    def _abort_on_error(self, exception):
+        self.handle_exception(exception)
+
+    # handle the excpetion, typically print it
     def handle_exception(self, exception):
         sys.print_exception(exception)
 
 
 class RestartingTask(Task):
-    def handle_exception(self, exception):
-        sys.print_exception(exception)
+    # this function is called by the scheduler
+    # this version also restarts the task
+    def _abort_on_error(self, exception):
+        self.handle_exception(exception)
         self.restart()
 
 
@@ -93,7 +100,7 @@ class Scheduler(object):
                     except:
                         # other errors: remove task, handle exception
                         self.remove(task)
-                        task.handle_exception(sys.exc_info()[1])
+                        task._abort_on_error(sys.exc_info()[1])
                     else:
                         if mask:
                             self.running.remove(task)
