@@ -1,4 +1,15 @@
-import re
+#! /usr/bin/env python3
+# encoding: utf-8
+#
+# (C) 2016 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
+
+try:
+    import ure
+except ImportError:
+    import re as ure
+
 
 class App(object):
     def __init__(self):
@@ -32,7 +43,7 @@ class App(object):
         priority = path.count('/')
         if not path.endswith('$'):
             path = path + '$'
-        self.routes.setdefault(verb, []).append((priority, path, re.compile(path), function))
+        self.routes.setdefault(verb, []).append((priority, path, ure.compile(path), function))
         return function
 
     # meant to be used as decorator

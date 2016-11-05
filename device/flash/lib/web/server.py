@@ -1,8 +1,14 @@
+#! /usr/bin/env python3
+# encoding: utf-8
+#
+# (C) 2016 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
 import socket
 import json
 import sys
 import os
-from . import umimetypes
+from . import umimetypes, url
 
 class Response(object):
     CONTENT_TYPE = 'text/plain'
@@ -37,7 +43,7 @@ class Response(object):
     def emit_content(self, server):
         if self.stream is not None:
             while True:
-                chunk = self.stream.read(1024)
+                chunk = self.stream.read(512)
                 if not chunk: break
                 server.wfile.write(chunk)
             try:
@@ -45,13 +51,18 @@ class Response(object):
             except:
                 logging.exception('close failed in Response')
             self.stream = None
-        else:
+        elif self.content is not None:
             server.wfile.write(self.content.encode('utf-8'))
 
     def emit(self, server):
         self.emit_headers(server)
         self.emit_content(server)
 
+
+class RedirectResponse(Response):
+    def __init__(self, url):
+        super().__init__(status=302)
+        self.headers['Location'] = url
 
 class HtmlResponse(Response):
     CONTENT_TYPE = 'text/html'
@@ -67,9 +78,9 @@ class JsonResponse(Response):
 class FileResponse(Response):
     def __init__(self, path):
         fileext = path.split('.')[-1]
-        self.CONTENT_TYPE = mimetypes.type_map.get(fileext, 'application/octet-stream')
-        stats = os.stat(path)
-        self.CONTENT_LENGTH = len(stat.sz_size)
+        self.CONTENT_TYPE = umimetypes.type_map.get('.'+fileext, 'application/octet-stream')
+        s = os.stat(path)
+        self.CONTENT_LENGTH = str(s[6])
         super().__init__(stream=open(path, 'rb'))
 
 
@@ -108,7 +119,7 @@ class Request(object):
         return self.rfile.read(int(self.headers[b'Content-Length']))
 
     def text(self):
-        return self.raw().decode(self.headers[b'Content-Encoding'])
+        return self.raw().decode(self.headers.get(b'Content-Encoding', 'utf-8'))
 
     def json(self):
         return json.loads(self.text())
@@ -117,7 +128,7 @@ class Request(object):
         # XXX store the interesting ones
         if key in [b'Content-Length', b'Content-Type']:
             self.headers[key] = value
-        print(key, value)
+        #~ print(key, value)
 
     def send_error(self, errorcode, message=None):
         self.send_response(errorcode)
@@ -153,7 +164,7 @@ class Server(object):
         except AttributeError:
             print("setsockopt not supported")
         self.listening_socket.bind(addr)
-        self.listening_socket.listen(5)
+        self.listening_socket.listen(1)
 
     def wait_for_client(self):
         client_socket, client_addr = self.listening_socket.accept()
@@ -164,9 +175,11 @@ class Server(object):
         #~ print(verb, path, _)
         request = Request(rfile, client_socket.makefile('wb'), verb, path)
         try:
-            response = self.app.handle_request(request, path.decode('utf-8')) # XXX decode %nn first
+            response = self.app.handle_request(request, url.decode(path))
             if response is not None:
                 response.emit(request)
+            else:
+                request.send_response(200)
         except Exception as e:
             sys.print_exception(e)
             request.send_error(500)
