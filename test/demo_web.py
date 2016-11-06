@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+# encoding: utf-8
+#
+# (C) 2016 Chris Liechti <cliechti@gmx.net>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
 """\
 Demo for the web service.
 """
@@ -39,7 +44,7 @@ def main():
 
     app2.optimize_routes() # must be called manually
 
-    # delegate everything under a path to a an other app, note that the slash is included in the regexp group
+    # delegate everything under a path to an other app, note that the slash is included in the regexp group
     @app.route('/app2(/.*)')
     def subapp(request, path):
         return app2.handle_request(request, path)

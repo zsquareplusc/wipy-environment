@@ -28,7 +28,7 @@ class Response(object):
             'Connection': 'close',
         }
         self.headers.update(self.CACHE_CONTROL)
-        if self.CONTENT_LENGTH and self.content is not None:
+        if self.CONTENT_LENGTH is None and self.content is not None:
             length = self.CONTENT_LENGTH
             if length is None:
                 length = len(self.content)
@@ -36,7 +36,7 @@ class Response(object):
 
     def emit_headers(self, server):
         server.send_response(self.status)
-        for header_name, header_value  in self.headers.items():
+        for header_name, header_value in self.headers.items():
             server.send_header(header_name, header_value)
         server.end_headers()
 
@@ -49,7 +49,7 @@ class Response(object):
             try:
                 self.stream.close()
             except:
-                logging.exception('close failed in Response')
+                 sys.print_exception()
             self.stream = None
         elif self.content is not None:
             server.wfile.write(self.content.encode('utf-8'))
@@ -63,6 +63,7 @@ class RedirectResponse(Response):
     def __init__(self, url):
         super().__init__(status=302)
         self.headers['Location'] = url
+
 
 class HtmlResponse(Response):
     CONTENT_TYPE = 'text/html'
