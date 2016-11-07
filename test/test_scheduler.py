@@ -73,8 +73,10 @@ class TestScheduler(scheduler.Scheduler):
 
         timeout = threading.Timer(timeout, run_abort)
         timeout.start()
-        self.loop()
-        timeout.cancel()
+        try:
+            self.loop()
+        finally:
+            timeout.cancel()
 
     def get_trace(self):
         try:
