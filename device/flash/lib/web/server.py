@@ -79,7 +79,7 @@ class JsonResponse(Response):
 class FileResponse(Response):
     def __init__(self, path):
         fileext = path.split('.')[-1]
-        self.CONTENT_TYPE = umimetypes.type_map.get('.'+fileext, 'application/octet-stream')
+        self.CONTENT_TYPE = umimetypes.type_map.get(fileext, 'application/octet-stream')
         s = os.stat(path)
         self.CONTENT_LENGTH = str(s[6])
         super().__init__(stream=open(path, 'rb'))

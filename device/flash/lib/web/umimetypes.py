@@ -6,16 +6,16 @@
 # SPDX-License-Identifier:    BSD-3-Clause
 
 type_map = {
-    '.js': 'application/javascript',
-    '.css': 'text/css',
-    '.html': 'text/html',
-    '.txt': 'text/plain',
-    '.gif': 'image/gif',
-    '.jpg': 'image/jpeg',
-    '.ico': 'image/vnd.microsoft.icon',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml',
-    '.zip': 'application/zip',
+    'js': b'application/javascript',
+    'css': b'text/css',
+    'html': b'text/html',
+    'txt': b'text/plain',
+    'gif': b'image/gif',
+    'jpg': b'image/jpeg',
+    'ico': b'image/vnd.microsoft.icon',
+    'png': b'image/png',
+    'svg': b'image/svg+xml',
+    'zip': b'application/zip',
 }
 
 
