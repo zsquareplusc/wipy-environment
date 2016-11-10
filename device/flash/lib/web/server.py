@@ -8,48 +8,50 @@ import socket
 import json
 import sys
 import os
+import gc
 from . import umimetypes, url
+gc.collect()
 
 class Response(object):
-    CONTENT_TYPE = 'text/plain'
+    CONTENT_TYPE = b'text/plain'
     CACHE_CONTROL = {
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': 'Fri, 01 Jan 1990 00:00:00 GMT',
-        'Pragma': 'no-cache',
+        b'Cache-Control': b'no-cache,no-store,must-revalidate',
     }
-    CONTENT_LENGTH = None
 
-    def __init__(self, content=None, stream=None, status=200):
+    def __init__(self, content=None, stream=None, length=None, status=b'200 OK'):
         self.content = content
         self.stream = stream
         self.status = status
         self.headers = {    # mapping of header name -> value
-            'Content-Type': self.CONTENT_TYPE,
-            'Connection': 'close',
+            b'Content-Type': self.CONTENT_TYPE,
+            b'Connection': b'close',
+            #~ b'Connection': b'keep-alive',
         }
         self.headers.update(self.CACHE_CONTROL)
-        if self.CONTENT_LENGTH is None and self.content is not None:
-            length = self.CONTENT_LENGTH
-            if length is None:
+        if length is None:
+            if self.content is not None:
                 length = len(self.content)
-            self.headers["Content-Length"] = length
+            elif self.stream is None:
+                length = 0
+        if length is not None:
+            self.headers[b'Content-Length'] = str(length).encode('utf-8')
 
     def emit_headers(self, server):
         server.send_response(self.status)
-        for header_name, header_value in self.headers.items():
+        for header_name, header_value  in self.headers.items():
             server.send_header(header_name, header_value)
         server.end_headers()
 
     def emit_content(self, server):
         if self.stream is not None:
             while True:
-                chunk = self.stream.read(512)
+                chunk = self.stream.read(256)
                 if not chunk: break
                 server.wfile.write(chunk)
             try:
                 self.stream.close()
             except:
-                 sys.print_exception()
+                sys.print_exception()
             self.stream = None
         elif self.content is not None:
             server.wfile.write(self.content.encode('utf-8'))
@@ -61,16 +63,15 @@ class Response(object):
 
 class RedirectResponse(Response):
     def __init__(self, url):
-        super().__init__(status=302)
-        self.headers['Location'] = url
-
+        super().__init__(status=b'302 Moved Temporarily')
+        self.headers[b'Location'] = url.encode('utf-8')  # XXX encoding of url
 
 class HtmlResponse(Response):
-    CONTENT_TYPE = 'text/html'
+    CONTENT_TYPE = b'text/html'
 
 
 class JsonResponse(Response):
-    CONTENT_TYPE = 'application/json'
+    CONTENT_TYPE = b'application/json'
 
     def __init__(self, obj):
         Response.__init__(self, json.dumps(obj))
@@ -78,37 +79,41 @@ class JsonResponse(Response):
 
 class FileResponse(Response):
     def __init__(self, path):
-        fileext = path.split('.')[-1]
-        self.CONTENT_TYPE = umimetypes.type_map.get(fileext, 'application/octet-stream')
-        s = os.stat(path)
-        self.CONTENT_LENGTH = str(s[6])
-        super().__init__(stream=open(path, 'rb'))
+        try:
+            s = os.stat(path)
+        except OSError:
+            super().__init__(status=b'404 Not Found')
+        else:
+            fileext = path.split('.')[-1]
+            self.CONTENT_TYPE = umimetypes.type_map.get(fileext, b'application/octet-stream')
+            self.CACHE_CONTROL = {
+                b'Cache-Control': b'max-age: 30',
+            }
+            super().__init__(stream=open(path, 'rb'), length=s[6])
 
 
-errormessages = {
-    200: 'OK',
-    400: 'Bad Request',
-    403: 'Forbidden',
-    404: 'Not Found',
-    #~ 405: 'Method Not Allowed'
-    #~ 414: 'Request-URI Too Long',
-    500: 'Internal Server Error',
-}
+STATUS200 = Response()
+STATUS204 = Response(status=b'204 No Content')
+STATUS500 = Response(status=b'500 Internal Server Error')
+STATUS404 = HtmlResponse(content='<div style="font-size:60">404 Not Found', status=b'404 Not Found')
 
-error_page = '<html><body>Error: {e}<br/>Message: {m}</body></html>'
 
 
 class Request(object):
 
-    def __init__(self, rfile, wfile, method, path):
+    def __init__(self, rfile, wfile, method=None, path=None):
         self.rfile = rfile
         self.wfile = wfile
         self.method = method
         self.path = path
+        self._read = False
         self.headers = {}
-        self._read_headers()
+        if method:
+            self._read_headers()
 
     def _read_headers(self):
+        self.headers.clear()
+        self._read = False
         while True:
             line = self.rfile.readline().rstrip()
             if not line: break
@@ -117,7 +122,8 @@ class Request(object):
             self.parse_header(key, value)
 
     def raw(self):
-        return self.rfile.read(int(self.headers[b'Content-Length']))
+        self._read = True
+        return self.rfile.read(int(self.headers.get(b'Content-Length', b'0')))
 
     def text(self):
         return self.raw().decode(self.headers.get(b'Content-Encoding', 'utf-8'))
@@ -127,23 +133,27 @@ class Request(object):
 
     def parse_header(self, key, value):
         # XXX store the interesting ones
-        if key in [b'Content-Length', b'Content-Type']:
+        if key in [b'Content-Length', b'Content-Type', b'Content-Encoding']:
             self.headers[key] = value
         #~ print(key, value)
 
-    def send_error(self, errorcode, message=None):
-        self.send_response(errorcode)
+    def send_error(self, status):
+        self.send_response(status)
         self.end_headers()
-        self.wfile.write(error_page.format(e=errorcode, m=message).encode('utf-8'))
+        self.wfile.write(status)
 
-    def send_response(self, errorcode, message=None):
-        #~ print(errorcode)
-        if message is None:
-            message = errormessages.get(errorcode, '')
-        self.wfile.write('HTTP/1.0 {} {}\r\n'.format(errorcode, message).encode('utf-8'))
+    def send_response(self, status):
+        if not self._read and b'Content-Length' in self.headers:
+            self.raw()  # read and drop data  XXX do it in small chunks
+        self.wfile.write(b'HTTP/1.1 ')
+        self.wfile.write(status)
+        self.wfile.write(b'\r\n')
 
     def send_header(self, key, value):
-        self.wfile.write('{}: {}\r\n'.format(key, value).encode('utf-8'))
+        self.wfile.write(key)
+        self.wfile.write(b': ')
+        self.wfile.write(value)
+        self.wfile.write(b'\r\n')
 
     def end_headers(self):
         self.wfile.write(b'\r\n')
@@ -168,30 +178,46 @@ class Server(object):
         self.listening_socket.listen(1)
 
     def wait_for_client(self):
-        client_socket, client_addr = self.listening_socket.accept()
-        #~ print(client_addr)
-        rfile = client_socket.makefile('rb')
-        commandline = rfile.readline()
-        verb, path, _ = commandline.strip().split(None, 2)
-        #~ print(verb, path, _)
-        request = Request(rfile, client_socket.makefile('wb'), verb, path)
+        client_socket, addr = self.listening_socket.accept()
         try:
-            response = self.app.handle_request(request, url.decode(path))
-            if response is not None:
-                response.emit(request)
-            else:
-                request.send_response(200)
-        except Exception as e:
-            sys.print_exception(e)
-            request.send_error(500)
-        client_socket.close()
+            #~ print(client_addr)
+            rfile = client_socket.makefile('rb')
+            request = Request(rfile, client_socket.makefile('wb'))
+            while True:
+                gc.collect()
+                print("ready")
+                commandline = rfile.readline()
+                print(addr, commandline)
+                request.method, request.path, _ = commandline.strip().split(None, 2)
+                request._read_headers()
+                try:
+                    response = self.app.handle_request(request, url.decode(request.path))
+                    if response is None:
+                        response = STATUS200
+                    response.emit(request)
+                    print(response.status)
+                except Exception as e:
+                    sys.print_exception(e)
+                    STATUS500.emit(request)
+                    print(STATUS500.status)
+                    break
+                #~ gc.collect()
+                if response.headers.get(b'Connection') != b'keep-alive':
+                    break
+        finally:
+            print("terminate")
+            gc.collect()
+            client_socket.close()
 
     def loop(self):
         self.app.optimize_routes()
+        gc.collect()
         while True:
             try:
                 self.wait_for_client()
+                #~ socket.print_pcbs()
+                #~ gc.collect()
             except Exception as e:
-                raise
-                #~ sys.print_exception(e)
+                #~ raise
+                sys.print_exception(e)
 

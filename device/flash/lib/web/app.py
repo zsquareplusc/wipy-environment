@@ -10,6 +10,7 @@ try:
 except ImportError:
     import re as ure
 
+from .server import STATUS404
 
 class App(object):
     def __init__(self):
@@ -29,7 +30,7 @@ class App(object):
                 #~ print(args)
                 return function(request, *args)
         else:
-            request.send_error(404)
+            return STATUS404
 
     def optimize_routes(self):
         # must sort handlers to get best matches first
