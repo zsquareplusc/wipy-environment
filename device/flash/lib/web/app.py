@@ -10,7 +10,7 @@ try:
 except ImportError:
     import re as ure
 
-from .server import STATUS404
+from .response import STATUS404
 
 class App(object):
     def __init__(self):
