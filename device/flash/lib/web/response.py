@@ -16,8 +16,6 @@ class Response(object):
         self.status = status
         self.headers = {    # mapping of header name -> value
             b'Cache-Control': b'no-cache,no-store,must-revalidate',
-            b'Connection': b'close',
-            #~ b'Connection': b'keep-alive',
         }
 
     def emit_content(self, server):
@@ -25,7 +23,7 @@ class Response(object):
 
     def emit(self, server):
         server.send_response(self.status)
-        for header_name, header_value  in self.headers.items():
+        for header_name, header_value in self.headers.items():
             if not isinstance(header_value, (bytes, bytearray, memoryview)):
                 header_value = str(header_value).encode('utf-8')
             server.send_header(header_name, header_value)

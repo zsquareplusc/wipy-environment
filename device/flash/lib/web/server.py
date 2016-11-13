@@ -17,29 +17,32 @@ gc.collect()
 
 class Request(object):
 
-    def __init__(self, rfile, wfile, method=None, path=None):
-        self.rfile = rfile
-        self.wfile = wfile
-        self.method = method
-        self.path = path
+    def __init__(self, connection):
+        self.connection = connection
+        self.method = None
+        self.path = None
         self._read = False
         self.headers = {}
-        if method:
-            self._read_headers()
 
     def _read_headers(self):
-        self.headers.clear()
-        self._read = False
         while True:
-            line = self.rfile.readline().rstrip()
+            line = self.connection.rfile.readline().rstrip()
             if not line: break
             key, value = line.split(b':', 1)
             # XXX urldecode key, value, multiline values
             self.parse_header(key, value)
 
+    def _read_request(self):
+        self.headers.clear()
+        self._read = False
+        commandline = self.connection.rfile.readline()
+        print(self.connection.name, commandline)
+        self.method, self.path, _ = commandline.strip().split(None, 2)
+        self._read_headers()
+
     def raw(self):
         self._read = True
-        return self.rfile.read(int(self.headers.get(b'Content-Length', b'0')))
+        return self.connection.rfile.read(int(self.headers.get(b'Content-Length', b'0')))
 
     def text(self):
         return self.raw().decode(self.headers.get(b'Content-Encoding', 'utf-8'))
@@ -48,19 +51,28 @@ class Request(object):
         return json.loads(self.text())
 
     def parse_header(self, key, value):
-        # XXX store the interesting ones
+        # XXX store the interesting ones, XXX case senitivity
         if key in [b'Content-Length', b'Content-Type', b'Content-Encoding']:
             self.headers[key] = value
         #~ print(key, value)
 
-    def send_error(self, status):
-        self.send_response(status)
-        self.end_headers()
-        self.wfile.write(status)
-
-    def send_response(self, status):
+    def cleanup(self):
         if not self._read and b'Content-Length' in self.headers:
             self.raw()  # read and drop data  XXX do it in small chunks
+
+
+class Connection(object):
+    def __init__(self, name, rfile, wfile):
+        self.name = name
+        self.rfile = rfile
+        self.wfile = wfile
+        self.headers = {
+            b'Server': b'femtoweb',
+            b'Connection': b'close',
+            #~ b'Connection': b'keep-alive',
+        }
+
+    def send_response(self, status):
         self.wfile.write(b'HTTP/1.1 ')
         self.wfile.write(status)
         self.wfile.write(b'\r\n')
@@ -72,7 +84,31 @@ class Request(object):
         self.wfile.write(b'\r\n')
 
     def end_headers(self):
+        for header_name, header_value in self.headers.items():
+            self.send_header(header_name, header_value)
         self.wfile.write(b'\r\n')
+
+    def do_request(self, app):
+        request = Request(self)
+        while True:
+            gc.collect()
+            print("ready")
+            try:
+                request._read_request()
+                response = app.handle_request(request, url.decode(request.path))
+                if response is None:
+                    response = STATUS204
+                request.cleanup()
+                response.emit(self)
+                print(response.status)
+            except Exception as e:
+                sys.print_exception(e)
+                STATUS500.emit(self)
+                print(STATUS500.status)
+                break
+            #~ gc.collect()
+            if self.headers.get(b'Connection') != b'keep-alive':
+                break
 
 
 class Server(object):
@@ -94,32 +130,13 @@ class Server(object):
         self.listening_socket.listen(1)
 
     def wait_for_client(self):
-        client_socket, addr = self.listening_socket.accept()
+        client_socket, client_addr = self.listening_socket.accept()
         try:
-            #~ print(client_addr)
-            rfile = client_socket.makefile('rb')
-            request = Request(rfile, client_socket.makefile('wb'))
-            while True:
-                gc.collect()
-                print("ready")
-                commandline = rfile.readline()
-                print(addr, commandline)
-                request.method, request.path, _ = commandline.strip().split(None, 2)
-                request._read_headers()
-                try:
-                    response = self.app.handle_request(request, url.decode(request.path))
-                    if response is None:
-                        response = STATUS204
-                    response.emit(request)
-                    print(response.status)
-                except Exception as e:
-                    sys.print_exception(e)
-                    STATUS500.emit(request)
-                    print(STATUS500.status)
-                    break
-                #~ gc.collect()
-                if response.headers.get(b'Connection') != b'keep-alive':
-                    break
+            connection = Connection(
+                client_addr,
+                client_socket.makefile('rb'),
+                client_socket.makefile('wb'))
+            connection.do_request(self.app)
         finally:
             print("terminate")
             gc.collect()
