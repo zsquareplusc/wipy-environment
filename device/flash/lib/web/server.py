@@ -46,22 +46,21 @@ class Connection(object):
         request = Request(self)
         while True:
             gc.collect()
-            print("ready")
+            #~ print("ready")
             try:
                 request._read_request()
                 response = app.handle_request(request, url.decode(request.path))
                 if response is None:
                     response = STATUS204
                 request.cleanup()
-                response.emit(self)
-                print(response.status)
             except Exception as e:
                 sys.print_exception(e)
-                STATUS500.emit(self)
-                print(STATUS500.status)
-                break
+                response = STATUS500
+            response.emit(self)
+            for s in (self.name, b': ', request.method, b' ', request.path, b' -> ', response.status, b'\n'):
+                sys.stderr.buffer.write(s)
             #~ gc.collect()
-            if self.headers.get(b'Connection') != b'keep-alive':
+            if response is STATUS500 or self.headers.get(b'Connection') != b'keep-alive':
                 break
 
 
@@ -72,14 +71,14 @@ class Server(object):
         self.listening_socket = socket.socket()
 
         # Binding to all interfaces - server will be accessible to other hosts!
-        ai = socket.getaddrinfo("0.0.0.0", port)
-        print("Bind address info:", ai)
+        ai = socket.getaddrinfo('0.0.0.0', port)
+        print('Bind address info:', ai)
         addr = ai[0][-1]
 
         try:
             self.listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
-            print("setsockopt not supported")
+            print('setsockopt not supported')
         self.listening_socket.bind(addr)
         self.listening_socket.listen(1)
 
@@ -87,12 +86,12 @@ class Server(object):
         client_socket, client_addr = self.listening_socket.accept()
         try:
             connection = Connection(
-                client_addr,
+                    '{}:{}'.format(*client_addr).encode('utf-8'),
                 client_socket.makefile('rb'),
                 client_socket.makefile('wb'))
             connection.do_request(self.app)
         finally:
-            print("terminate")
+            #~ print("terminate")
             gc.collect()
             client_socket.close()
 
