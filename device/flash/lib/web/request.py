@@ -28,7 +28,7 @@ class Request(object):
         self.headers.clear()
         self._read = False
         commandline = self.connection.rfile.readline()
-        print(self.connection.name, commandline)
+        #~ print(self.connection.name, commandline)
         self.method, self.path, _ = commandline.strip().split(None, 2)
         self._read_headers()
 

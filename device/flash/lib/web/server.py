@@ -8,60 +8,9 @@ import socket
 import sys
 import os
 import gc
-from . import url
-from .response import STATUS204, STATUS500
-from .request import Request
+from .connection import Connection
 gc.collect()
 
-
-
-class Connection(object):
-    def __init__(self, name, rfile, wfile):
-        self.name = name
-        self.rfile = rfile
-        self.wfile = wfile
-        self.headers = {
-            b'Server': b'femtoweb',
-            b'Connection': b'close',
-            #~ b'Connection': b'keep-alive',
-        }
-
-    def send_response(self, status):
-        self.wfile.write(b'HTTP/1.1 ')
-        self.wfile.write(status)
-        self.wfile.write(b'\r\n')
-
-    def send_header(self, key, value):
-        self.wfile.write(key)
-        self.wfile.write(b': ')
-        self.wfile.write(value)
-        self.wfile.write(b'\r\n')
-
-    def end_headers(self):
-        for header_name, header_value in self.headers.items():
-            self.send_header(header_name, header_value)
-        self.wfile.write(b'\r\n')
-
-    def do_request(self, app):
-        request = Request(self)
-        while True:
-            gc.collect()
-            #~ print("ready")
-            try:
-                request._read_request()
-                response = app.handle_request(request, url.decode(request.path))
-                if response is None:
-                    response = STATUS204
-                request.cleanup()
-            except Exception as e:
-                sys.print_exception(e)
-                response = STATUS500
-            response.emit(self)
-            for s in (self.name, b': ', request.method, b' ', request.path, b' -> ', response.status, b'\n'):
-                sys.stderr.buffer.write(s)
-            #~ gc.collect()
-            if response is STATUS500 or self.headers.get(b'Connection') != b'keep-alive':
-                break
 
 
 class Server(object):
@@ -86,9 +35,11 @@ class Server(object):
         client_socket, client_addr = self.listening_socket.accept()
         try:
             connection = Connection(
-                    '{}:{}'.format(*client_addr).encode('utf-8'),
+                '{}:{}'.format(*client_addr).encode('utf-8'),
                 client_socket.makefile('rb'),
-                client_socket.makefile('wb'))
+                client_socket.makefile('wb'),
+                #~ keep=True)
+                keep=False)
             connection.do_request(self.app)
         finally:
             #~ print("terminate")
