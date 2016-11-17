@@ -35,7 +35,7 @@ class Task(object):
     def _abort_on_error(self, exception):
         self.handle_exception(exception)
 
-    # handle the excpetion, typically print it
+    # handle the exception, typically print it
     def handle_exception(self, exception):
         sys.print_exception(exception)
 
@@ -71,10 +71,14 @@ class Scheduler(object):
         return task
 
     def remove(self, task):
-        if task in self.running:
+        try:
             self.running.remove(task)
-        if task in self.waiting:
+        except ValueError:
+            pass
+        try:
             self.waiting.remove(task)
+        except ValueError:
+            pass
 
     def set_flag(self, flag):
         self.flags |= flag
@@ -108,6 +112,10 @@ class Scheduler(object):
                             task.mask = mask
             else:
                 self.sleep()
+
+    # can be customized by subclassing
+    # sleep can be blocking while saving power for example, but the wakeup
+    # call must exit it
 
     def wakeup(self):
         pass
