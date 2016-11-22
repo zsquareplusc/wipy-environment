@@ -7,12 +7,14 @@
 #
 # SPDX-License-Identifier:    BSD-3-Clause
 
+import machine
 import expansionboard
 import autoconfig
 import upathlib
 import ulog
 
-autoconfig.wlan()
+if machine.reset_cause() != machine.SOFT_RESET:
+    autoconfig.wlan()
 
 
 ulog_config = upathlib.Path('/flash/ulogconfig.py')
