@@ -8,10 +8,17 @@ import socket
 import sys
 import os
 import gc
+import esp
+#~ import time
+import machine
+import micropython
 from .connection import Connection
+import ulog
 gc.collect()
 
+#~ led = machine.Pin(2, machine.Pin.OUT, value=1)
 
+log = ulog.Logger('HTTPD: ')
 
 class Server(object):
     def __init__(self, app, port=80):
@@ -21,18 +28,20 @@ class Server(object):
 
         # Binding to all interfaces - server will be accessible to other hosts!
         ai = socket.getaddrinfo('0.0.0.0', port)
-        print('Bind address info:', ai)
+        log.info('Bind address info: {}'.format(ai))
         addr = ai[0][-1]
 
         try:
             self.listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
-            print('setsockopt not supported')
+            log.warn('setsockopt not supported')
         self.listening_socket.bind(addr)
         self.listening_socket.listen(1)
 
     def wait_for_client(self):
         client_socket, client_addr = self.listening_socket.accept()
+        #~ client_socket.settimeout(5)
+        #~ led.low()
         try:
             connection = Connection(
                 '{}:{}'.format(*client_addr).encode('utf-8'),
@@ -45,15 +54,24 @@ class Server(object):
             #~ print("terminate")
             gc.collect()
             client_socket.close()
+            #~ led.high()
 
     def loop(self):
         self.app.optimize_routes()
         gc.collect()
+        micropython.mem_info(1)
         while True:
             try:
+                #~ esp.osdebug(0)
                 self.wait_for_client()
                 #~ socket.print_pcbs()
                 #~ gc.collect()
+            except OSError as e:
+                sys.print_exception(e)
+                #~ if 'ENOMEM' in str(e):
+                    #~ micropython.mem_info(1)
+                    #~ socket.print_pcbs()
+                    #~ machine.reset()
             except Exception as e:
                 #~ raise
                 sys.print_exception(e)

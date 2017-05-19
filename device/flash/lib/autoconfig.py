@@ -32,7 +32,7 @@ def wlan():
         try:
             # configure the WLAN subsystem in station mode (the default is AP)
             wlan = WLAN(mode=WLAN.STA)
-            log.info('connecting to network (AP)...')
+            log.info('connecting to {}...'.format(wlanconfig.ssid))
             wlan.connect(wlanconfig.ssid, auth=(WLAN.WPA2, wlanconfig.password), timeout=5000)
             log.info('waiting for IP...')
             for tries in range(50):
