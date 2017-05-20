@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier:    BSD-3-Clause
 
+
 def decode(b_url):  # expecting bytes
     parts = b_url.split(b'%')
     d = bytearray(parts[0])  # the 1st is special
@@ -13,4 +14,3 @@ def decode(b_url):  # expecting bytes
             d.append(int(part[:2], 16))
             d.extend(part[2:])
     return bytes(d).decode('utf-8')
-

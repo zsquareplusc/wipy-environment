@@ -17,5 +17,3 @@ type_map = {
     'svg': b'image/svg+xml',
     'zip': b'application/zip',
 }
-
-

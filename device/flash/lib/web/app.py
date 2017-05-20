@@ -12,6 +12,7 @@ except ImportError:
 
 from .response import STATUS404
 
+
 class App(object):
     def __init__(self):
         self.routes = {}
@@ -50,4 +51,3 @@ class App(object):
     # meant to be used as decorator
     def route(self, path, method=b'GET'):
         return lambda fn: self.add_route(method, path, fn)
-

@@ -36,6 +36,7 @@ LOG_FTP       = 0o130   #  FTP daemon
 
 prio_text = ('EMERG', 'ALERT', 'CRIT', 'ERROR', 'WARN', 'NOTICE', 'INFO', 'DEBUG')
 
+
 class DefaultHandler(object):
     def __init__(self):
         self.fmt = '{p} {x}{m}\n'
@@ -56,6 +57,7 @@ class RSyslogHandler(object):
 
 
 handlers = [DefaultHandler()]
+
 
 class Logger(object):
     def __init__(self, prefix='', facility=LOG_USER):
@@ -83,6 +85,7 @@ class Logger(object):
 
 
 root = Logger()
+
 
 def add_remote(host, port=514):
     """Add remote syslog destination"""

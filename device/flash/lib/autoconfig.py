@@ -52,5 +52,3 @@ def wlan():
             wlanconfig = None
     if wlanconfig is None:
         wlan.init(mode=WLAN.AP, ssid='wipy-wlan', auth=(WLAN.WPA2,'www.wipy.io'), channel=7, antenna=WLAN.INT_ANT)
-
-

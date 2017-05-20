@@ -19,7 +19,8 @@ class Request(object):
     def _read_headers(self):
         while True:
             line = self.connection.rfile.readline().rstrip()
-            if not line: break
+            if not line:
+                break
             key, value = line.split(b':', 1)
             # XXX urldecode key, value, multiline values
             self.parse_header(key, value)

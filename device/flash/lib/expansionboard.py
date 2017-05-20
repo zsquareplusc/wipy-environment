@@ -20,7 +20,7 @@ uart = None
 
 # initialize GPIO16 (GN LED on expansion board) in gpio mode (alt=0) and make it an output
 led = Pin('GP16', mode=Pin.OUT)
-led(1) # LED OFF
+led(1)  # LED OFF
 
 s1 = Pin('GP17', mode=Pin.IN, pull=Pin.PULL_UP)
 
@@ -57,4 +57,3 @@ def set_callback_for_switch(callback):
         s1.irq(trigger=Pin.IRQ_FALLING, priority=1, handler=callback)
     else:
         s1.irq(trigger=0)
-

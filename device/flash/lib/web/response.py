@@ -7,7 +7,7 @@
 import json
 import sys
 import os
-from . import umimetypes, url
+from . import umimetypes
 
 
 class Response(object):
@@ -58,7 +58,8 @@ class StreamResponse(Response):
     def emit_content(self, server):
         while True:
             chunk = self.stream.read(256)
-            if not chunk: break
+            if not chunk:
+                break
             server.wfile.write(chunk)
         try:
             self.stream.close()
@@ -90,7 +91,7 @@ def FileResponse(path):
         return STATUS404
     else:
         fileext = path.split('.')[-1]
-        mime_type =  umimetypes.type_map.get(fileext, b'application/octet-stream')
+        mime_type = umimetypes.type_map.get(fileext, b'application/octet-stream')
         response = StreamResponse(open(path, 'rb'), s[6], mime_type)  # stream, len
         response.headers[b'Cache-Control'] = b'max-age: 30'
         return response
@@ -110,4 +111,3 @@ STATUS200 = Response(b'200 OK')
 STATUS204 = Response(b'204 No Content')
 STATUS500 = ErrorResponse(b'500 Internal Server Error')
 STATUS404 = ErrorResponse(b'404 Not Found')
-
