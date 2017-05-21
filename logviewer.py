@@ -15,7 +15,7 @@ import sys
 
 prio_text = ('EMERG', 'ALERT', 'CRIT', 'ERR', 'WARN', 'NOTICE', 'INFO', 'DEBUG')
 
-re_syslog = re.compile(r'<(?P<pri>\d+)> (?P<msg>.*)') # XXX simplified subset
+re_syslog = re.compile(r'<(?P<pri>\d+)> (?P<msg>.*)')  # XXX simplified subset
 
 
 def log_receiver(output, port):
