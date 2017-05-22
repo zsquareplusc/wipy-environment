@@ -95,7 +95,6 @@ class Scheduler(object):
             if self.running:
                 for task in list(self.running):
                     try:
-                        #~ print("! next->{}".format(task.generator.__name__))
                         mask = task.iterator.__next__()
                     except StopIteration:
                         self.remove(task)

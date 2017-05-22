@@ -6,19 +6,14 @@
 # SPDX-License-Identifier:    BSD-3-Clause
 import socket
 import sys
-import os
 import gc
-import esp
-#~ import time
-import machine
 import micropython
 from .connection import Connection
 import ulog
 gc.collect()
 
-#~ led = machine.Pin(2, machine.Pin.OUT, value=1)
-
 log = ulog.Logger('HTTPD: ')
+
 
 class Server(object):
     def __init__(self, app, port=80):
@@ -41,7 +36,6 @@ class Server(object):
     def wait_for_client(self):
         client_socket, client_addr = self.listening_socket.accept()
         #~ client_socket.settimeout(5)
-        #~ led.low()
         try:
             connection = Connection(
                 '{}:{}'.format(*client_addr).encode('utf-8'),
@@ -54,7 +48,6 @@ class Server(object):
             #~ print("terminate")
             gc.collect()
             client_socket.close()
-            #~ led.high()
 
     def loop(self):
         self.app.optimize_routes()
@@ -62,7 +55,6 @@ class Server(object):
         micropython.mem_info(1)
         while True:
             try:
-                #~ esp.osdebug(0)
                 self.wait_for_client()
                 #~ socket.print_pcbs()
                 #~ gc.collect()
@@ -75,4 +67,3 @@ class Server(object):
             except Exception as e:
                 #~ raise
                 sys.print_exception(e)
-

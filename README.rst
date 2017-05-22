@@ -10,6 +10,7 @@ the SD card.
 Code for the PC simplifies first time setup and later copying data to the WiPy_
 or backing it up.
 
+
 Features
 ========
 Assuming the ExpansionBoard_ (or a similar setup) is present.
